@@ -4,8 +4,8 @@
   "description": "Notes de chantier : texte + photos, export PDF.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f4f1ec",
-  "theme_color": "#bd6a2e",
+  "background_color": "#f1f4ea",
+  "theme_color": "#aaca59",
   "orientation": "portrait",
   "icons": [
     {

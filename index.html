@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f4f1ec" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#181611" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f1f4ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151813" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,28 +17,35 @@
 <title>Notes de chantier</title>
 <style>
   :root{
-    --bg:#f4f1ec; --surface:#ffffff; --surface-2:#faf8f4;
-    --ink:#1d1a15; --muted:#6d665a; --line:#e5dfd4;
-    --accent:#bd6a2e; --accent-ink:#ffffff; --accent-weak:#f3e4d6;
-    --success:#2e7d54; --danger:#b23b3b;
-    --shadow:0 1px 2px rgba(40,30,15,.06), 0 6px 20px rgba(40,30,15,.06);
+    --bg:#f1f4ea; --surface:#ffffff; --surface-2:#f6f8ef;
+    --ink:#231f20; --muted:#6f7360; --line:#e1e6d6;
+    --brand:#aaca59;                    /* vert Tech-Elec */
+    --accent:#aaca59; --accent-ink:#231f20; --accent-weak:#e9f1d6;
+    --accent-deep:#5c8a29;              /* vert foncé lisible (texte/liens) */
+    --rust:#8a6d1e;                     /* secondaire charte */
+    --success:#4b7d2a; --danger:#b23b3b;
+    --shadow:0 1px 2px rgba(30,40,15,.06), 0 6px 20px rgba(30,40,15,.07);
     --font-sans:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,sans-serif;
     --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
   }
   @media (prefers-color-scheme:dark){
     :root:not([data-theme="light"]){
-      --bg:#181611; --surface:#221f18; --surface-2:#2b2820;
-      --ink:#efe9dd; --muted:#a49a89; --line:#332f26;
-      --accent:#e08a4a; --accent-ink:#1a1206; --accent-weak:#3a2c1c;
-      --success:#54b483; --danger:#e06a6a;
+      --bg:#151813; --surface:#1e211a; --surface-2:#262a20;
+      --ink:#eef1e6; --muted:#9aa389; --line:#333829;
+      --brand:#aaca59;
+      --accent:#aaca59; --accent-ink:#17200c; --accent-weak:#2b331d;
+      --accent-deep:#a7cc58; --rust:#c39a3a;
+      --success:#79b84a; --danger:#e06a6a;
       --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
     }
   }
   :root[data-theme="dark"]{
-    --bg:#181611; --surface:#221f18; --surface-2:#2b2820;
-    --ink:#efe9dd; --muted:#a49a89; --line:#332f26;
-    --accent:#e08a4a; --accent-ink:#1a1206; --accent-weak:#3a2c1c;
-    --success:#54b483; --danger:#e06a6a;
+    --bg:#151813; --surface:#1e211a; --surface-2:#262a20;
+    --ink:#eef1e6; --muted:#9aa389; --line:#333829;
+    --brand:#aaca59;
+    --accent:#aaca59; --accent-ink:#17200c; --accent-weak:#2b331d;
+    --accent-deep:#a7cc58; --rust:#c39a3a;
+    --success:#79b84a; --danger:#e06a6a;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
   }
 
@@ -60,11 +67,12 @@
     display:flex; align-items:center; gap:12px;
   }
   header .mark{
-    width:34px; height:34px; border-radius:9px; flex:0 0 auto;
-    background:var(--accent); color:var(--accent-ink);
-    display:grid; place-items:center; font-weight:800; font-size:18px;
+    width:40px; height:40px; border-radius:11px; flex:0 0 auto;
+    background:var(--brand); padding:6px;
+    display:grid; place-items:center;
     box-shadow:var(--shadow);
   }
+  header .mark svg{width:100%; height:100%; display:block}
   header h1{font-size:17px; font-weight:750; margin:0; letter-spacing:-.01em; line-height:1.1}
   header .sub{font-size:12px; color:var(--muted); font-family:var(--font-mono)}
   header .spacer{flex:1}
@@ -142,7 +150,7 @@
   .btn:disabled{opacity:.45; cursor:not-allowed}
   .btn.primary{
     flex:1; background:var(--accent); color:var(--accent-ink); border-color:transparent;
-    box-shadow:0 6px 18px rgba(189,106,46,.32);
+    box-shadow:0 6px 18px rgba(120,168,46,.34);
     display:flex; align-items:center; justify-content:center; gap:8px;
   }
   .btn:active{transform:translateY(1px)}
@@ -153,7 +161,7 @@
   .list-head .count{font-family:var(--font-mono); font-size:12px; color:var(--muted)}
   .note{padding:14px 14px 12px}
   .note .top{display:flex; align-items:baseline; gap:8px; margin-bottom:6px}
-  .note .chantier{font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--accent)}
+  .note .chantier{font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--accent-deep)}
   .note .when{font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-left:auto; white-space:nowrap}
   .note .body{font-size:14.5px; white-space:pre-wrap; overflow-wrap:anywhere; margin:0 0 10px}
   .note .body.empty{color:var(--muted); font-style:italic}
@@ -168,7 +176,7 @@
     appearance:none; cursor:pointer; font:inherit; font-size:13px; font-weight:650;
     border-radius:10px; padding:9px 13px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
   }
-  .mini-btn.send{background:var(--accent-weak); color:var(--accent); border-color:transparent}
+  .mini-btn.send{background:var(--accent-weak); color:var(--accent-deep); border-color:transparent}
   .mini-btn.danger{color:var(--danger)}
   .mini-btn:active{transform:scale(.97)}
   .grow{flex:1}
@@ -178,6 +186,8 @@
     padding:34px 20px; border:1px dashed var(--line); border-radius:16px; margin-top:14px;
   }
   .empty .g{font-size:30px; display:block; margin-bottom:8px}
+  .empty .g.plug{display:flex; justify-content:center}
+  .empty .g.plug svg{width:42px; height:52px; color:var(--brand)}
 
   .hint{font-size:12px; color:var(--muted); margin:10px 2px 0; line-height:1.5}
   .hint b{color:var(--ink); font-weight:650}
@@ -222,7 +232,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="mark">⚡</div>
+    <div class="mark"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="45.4" cy="8.6" r="2.1" fill="#fff"/><circle cx="54.6" cy="8.6" r="2.0" fill="#fff"/><circle cx="31.6" cy="16.9" r="2.5" fill="#fff"/><circle cx="40.8" cy="16.9" r="2.5" fill="#fff"/><circle cx="50.0" cy="16.9" r="2.5" fill="#fff"/><circle cx="59.2" cy="16.9" r="2.3" fill="#fff"/><circle cx="68.4" cy="16.9" r="2.1" fill="#fff"/><circle cx="17.8" cy="25.2" r="2.6" fill="#fff"/><circle cx="27.0" cy="25.2" r="2.9" fill="#fff"/><circle cx="36.2" cy="25.2" r="3.0" fill="#fff"/><circle cx="45.4" cy="25.2" r="3.0" fill="#fff"/><circle cx="54.6" cy="25.2" r="2.8" fill="#fff"/><circle cx="63.8" cy="25.2" r="2.6" fill="#fff"/><circle cx="73.0" cy="25.2" r="2.3" fill="#fff"/><circle cx="82.2" cy="25.2" r="1.9" fill="#fff"/><circle cx="13.2" cy="33.4" r="2.8" fill="#fff"/><circle cx="22.4" cy="33.4" r="3.2" fill="#fff"/><circle cx="31.6" cy="33.4" r="3.4" fill="#fff"/><circle cx="40.8" cy="33.4" r="3.4" fill="#fff"/><circle cx="50.0" cy="33.4" r="3.3" fill="#fff"/><circle cx="59.2" cy="33.4" r="3.1" fill="#fff"/><circle cx="68.4" cy="33.4" r="2.8" fill="#fff"/><circle cx="77.6" cy="33.4" r="2.4" fill="#fff"/><circle cx="86.8" cy="33.4" r="2.0" fill="#fff"/><circle cx="17.8" cy="41.7" r="3.3" fill="#fff"/><circle cx="27.0" cy="41.7" r="3.7" fill="#fff"/><circle cx="36.2" cy="41.7" r="3.9" fill="#fff"/><circle cx="45.4" cy="41.7" r="3.9" fill="#fff"/><circle cx="54.6" cy="41.7" r="3.6" fill="#fff"/><circle cx="63.8" cy="41.7" r="3.3" fill="#fff"/><circle cx="73.0" cy="41.7" r="2.8" fill="#fff"/><circle cx="82.2" cy="41.7" r="2.4" fill="#fff"/><circle cx="13.2" cy="50.0" r="3.3" fill="#fff"/><circle cx="22.4" cy="50.0" r="3.8" fill="#fff"/><circle cx="31.6" cy="50.0" r="4.2" fill="#fff"/><circle cx="40.8" cy="50.0" r="4.4" fill="#fff"/><circle cx="50.0" cy="50.0" r="4.1" fill="#fff"/><circle cx="59.2" cy="50.0" r="3.7" fill="#fff"/><circle cx="68.4" cy="50.0" r="3.3" fill="#fff"/><circle cx="77.6" cy="50.0" r="2.8" fill="#fff"/><circle cx="86.8" cy="50.0" r="2.3" fill="#fff"/><circle cx="17.8" cy="58.3" r="3.7" fill="#fff"/><circle cx="27.0" cy="58.3" r="4.2" fill="#fff"/><circle cx="36.2" cy="58.3" r="4.7" fill="#fff"/><circle cx="45.4" cy="58.3" r="4.6" fill="#fff"/><circle cx="54.6" cy="58.3" r="4.1" fill="#fff"/><circle cx="63.8" cy="58.3" r="3.6" fill="#fff"/><circle cx="73.0" cy="58.3" r="3.1" fill="#fff"/><circle cx="82.2" cy="58.3" r="2.6" fill="#fff"/><circle cx="13.2" cy="66.6" r="3.4" fill="#fff"/><circle cx="22.4" cy="66.6" r="3.9" fill="#fff"/><circle cx="31.6" cy="66.6" r="4.3" fill="#fff"/><circle cx="40.8" cy="66.6" r="4.5" fill="#fff"/><circle cx="50.0" cy="66.6" r="4.2" fill="#fff"/><circle cx="59.2" cy="66.6" r="3.8" fill="#fff"/><circle cx="68.4" cy="66.6" r="3.3" fill="#fff"/><circle cx="77.6" cy="66.6" r="2.8" fill="#fff"/><circle cx="86.8" cy="66.6" r="2.3" fill="#fff"/><circle cx="17.8" cy="74.8" r="3.4" fill="#fff"/><circle cx="27.0" cy="74.8" r="3.8" fill="#fff"/><circle cx="36.2" cy="74.8" r="4.1" fill="#fff"/><circle cx="45.4" cy="74.8" r="4.0" fill="#fff"/><circle cx="54.6" cy="74.8" r="3.8" fill="#fff"/><circle cx="63.8" cy="74.8" r="3.4" fill="#fff"/><circle cx="73.0" cy="74.8" r="2.9" fill="#fff"/><circle cx="82.2" cy="74.8" r="2.5" fill="#fff"/><circle cx="31.6" cy="83.1" r="3.6" fill="#fff"/><circle cx="40.8" cy="83.1" r="3.6" fill="#fff"/><circle cx="50.0" cy="83.1" r="3.5" fill="#fff"/><circle cx="59.2" cy="83.1" r="3.3" fill="#fff"/><circle cx="68.4" cy="83.1" r="2.9" fill="#fff"/><circle cx="45.4" cy="91.4" r="3.2" fill="#fff"/><circle cx="54.6" cy="91.4" r="3.0" fill="#fff"/></svg></div>
     <div>
       <h1>Notes de chantier</h1>
       <div class="sub" id="hdr-sub">Tech-Elec</div>
@@ -599,7 +609,11 @@
     $("#hdr-sub").textContent = notes.length ? `${notes.length} note${notes.length>1?"s":""}` : "Tech-Elec";
 
     if(!notes.length){
-      elList.innerHTML=`<div class="empty"><span class="g">🗒️</span>Aucune note pour l'instant.<br>Saisissez la première ci-dessus.</div>`;
+      elList.innerHTML=`<div class="empty"><span class="g plug"><svg viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<path d="M24 6v16M40 6v16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+<path d="M18 22h28v8a14 14 0 0 1-14 14 14 14 0 0 1-14-14v-8z" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+<path d="M32 44v10c0 8-11 8-11 16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+</svg></span>Aucune note pour l'instant.<br>Saisissez la première ci-dessus.</div>`;
       return;
     }
     elList.innerHTML="";
