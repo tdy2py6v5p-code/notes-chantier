@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f1ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#181611" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chantier">
+<meta name="description" content="Notes de chantier Tech-Elec — texte + photos, export PDF, stockage local sur l'appareil.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<style>:root{color-scheme:light dark}html,body{margin:0;padding:0}img{max-width:100%}</style>
+<title>Notes de chantier</title>
+<style>
+  :root{
+    --bg:#f4f1ec; --surface:#ffffff; --surface-2:#faf8f4;
+    --ink:#1d1a15; --muted:#6d665a; --line:#e5dfd4;
+    --accent:#bd6a2e; --accent-ink:#ffffff; --accent-weak:#f3e4d6;
+    --success:#2e7d54; --danger:#b23b3b;
+    --shadow:0 1px 2px rgba(40,30,15,.06), 0 6px 20px rgba(40,30,15,.06);
+    --font-sans:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,sans-serif;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#181611; --surface:#221f18; --surface-2:#2b2820;
+      --ink:#efe9dd; --muted:#a49a89; --line:#332f26;
+      --accent:#e08a4a; --accent-ink:#1a1206; --accent-weak:#3a2c1c;
+      --success:#54b483; --danger:#e06a6a;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#181611; --surface:#221f18; --surface-2:#2b2820;
+    --ink:#efe9dd; --muted:#a49a89; --line:#332f26;
+    --accent:#e08a4a; --accent-ink:#1a1206; --accent-weak:#3a2c1c;
+    --success:#54b483; --danger:#e06a6a;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--font-sans);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    line-height:1.45; padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:640px; margin:0 auto; padding:0 16px 132px}
+
+  /* Header */
+  header{
+    position:sticky; top:0; z-index:20; background:var(--bg);
+    padding:calc(env(safe-area-inset-top) + 14px) 16px 12px;
+    margin:0 -16px 4px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:12px;
+  }
+  header .mark{
+    width:34px; height:34px; border-radius:9px; flex:0 0 auto;
+    background:var(--accent); color:var(--accent-ink);
+    display:grid; place-items:center; font-weight:800; font-size:18px;
+    box-shadow:var(--shadow);
+  }
+  header h1{font-size:17px; font-weight:750; margin:0; letter-spacing:-.01em; line-height:1.1}
+  header .sub{font-size:12px; color:var(--muted); font-family:var(--font-mono)}
+  header .spacer{flex:1}
+  .icon-btn{
+    appearance:none; border:1px solid var(--line); background:var(--surface);
+    color:var(--ink); width:38px; height:38px; border-radius:10px; font-size:17px;
+    display:grid; place-items:center; cursor:pointer;
+  }
+  .icon-btn:active{transform:scale(.94)}
+
+  /* Cards */
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow); padding:16px; margin-top:14px;
+  }
+  .eyebrow{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 10px;
+  }
+
+  label.field{display:block; margin-bottom:12px}
+  .field > span{
+    display:block; font-size:12.5px; font-weight:650; color:var(--muted);
+    margin-bottom:6px; letter-spacing:.01em;
+  }
+  input[type=text], textarea{
+    width:100%; font:inherit; color:var(--ink);
+    background:var(--surface-2); border:1px solid var(--line);
+    border-radius:12px; padding:12px 13px; outline:none; resize:vertical;
+  }
+  input[type=text]{font-family:var(--font-mono); font-size:15px}
+  textarea{min-height:120px; line-height:1.5}
+  input:focus, textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-weak)}
+  ::placeholder{color:var(--muted); opacity:.7}
+
+  /* Media buttons */
+  .media-row{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:2px}
+  .media-btn{
+    appearance:none; cursor:pointer; font:inherit; font-size:12.5px; font-weight:600;
+    color:var(--ink); background:var(--surface-2); border:1px dashed var(--line);
+    border-radius:12px; padding:12px 6px; display:flex; flex-direction:column;
+    align-items:center; gap:5px;
+  }
+  .media-btn .g{font-size:20px}
+  .media-btn:active{transform:scale(.97); border-color:var(--accent)}
+  .media-btn input{display:none}
+
+  /* Thumbnails */
+  .thumbs{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px}
+  .thumb{position:relative; aspect-ratio:1; border-radius:11px; overflow:hidden; background:var(--surface-2); border:1px solid var(--line)}
+  .thumb img, .thumb video{width:100%; height:100%; object-fit:cover; display:block}
+  .thumb .badge{
+    position:absolute; left:5px; bottom:5px; font-family:var(--font-mono); font-size:10px;
+    background:rgba(0,0,0,.62); color:#fff; padding:2px 5px; border-radius:5px;
+  }
+  .thumb .play{position:absolute; inset:0; display:grid; place-items:center; color:#fff; font-size:26px; text-shadow:0 1px 4px rgba(0,0,0,.6); pointer-events:none}
+  .thumb .rm{
+    position:absolute; top:4px; right:4px; width:24px; height:24px; border-radius:50%;
+    border:none; background:rgba(0,0,0,.62); color:#fff; font-size:15px; line-height:1;
+    cursor:pointer; display:grid; place-items:center;
+  }
+
+  /* Bottom action bar */
+  .actions{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background:linear-gradient(to top, var(--bg) 72%, transparent);
+    padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);
+  }
+  .actions-inner{max-width:640px; margin:0 auto; display:flex; gap:10px}
+  .btn{
+    appearance:none; cursor:pointer; font:inherit; font-weight:700; font-size:16px;
+    border-radius:14px; padding:15px 16px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); flex:0 0 auto;
+  }
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .btn.primary{
+    flex:1; background:var(--accent); color:var(--accent-ink); border-color:transparent;
+    box-shadow:0 6px 18px rgba(189,106,46,.32);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{transform:translateY(1px)}
+
+  /* Saved list */
+  .list-head{display:flex; align-items:baseline; gap:8px; margin:26px 2px 2px}
+  .list-head h2{font-size:15px; font-weight:750; margin:0}
+  .list-head .count{font-family:var(--font-mono); font-size:12px; color:var(--muted)}
+  .note{padding:14px 14px 12px}
+  .note .top{display:flex; align-items:baseline; gap:8px; margin-bottom:6px}
+  .note .chantier{font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--accent)}
+  .note .when{font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-left:auto; white-space:nowrap}
+  .note .body{font-size:14.5px; white-space:pre-wrap; overflow-wrap:anywhere; margin:0 0 10px}
+  .note .body.empty{color:var(--muted); font-style:italic}
+  .note .mini{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:11px}
+  .note .mini .m{width:52px; height:52px; border-radius:8px; overflow:hidden; background:var(--surface-2); border:1px solid var(--line); position:relative}
+  .note .mini .m img, .note .mini .m video{width:100%; height:100%; object-fit:cover}
+  .note .mini .m .pl{position:absolute; inset:0; display:grid; place-items:center; color:#fff; font-size:16px; text-shadow:0 1px 3px #000}
+  .note .row{display:flex; gap:8px; align-items:center}
+  .pill{font-family:var(--font-mono); font-size:11px; padding:3px 8px; border-radius:20px; border:1px solid var(--line); color:var(--muted)}
+  .pill.sent{color:var(--success); border-color:color-mix(in srgb, var(--success) 40%, var(--line))}
+  .mini-btn{
+    appearance:none; cursor:pointer; font:inherit; font-size:13px; font-weight:650;
+    border-radius:10px; padding:9px 13px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
+  }
+  .mini-btn.send{background:var(--accent-weak); color:var(--accent); border-color:transparent}
+  .mini-btn.danger{color:var(--danger)}
+  .mini-btn:active{transform:scale(.97)}
+  .grow{flex:1}
+
+  .empty{
+    text-align:center; color:var(--muted); font-size:14px;
+    padding:34px 20px; border:1px dashed var(--line); border-radius:16px; margin-top:14px;
+  }
+  .empty .g{font-size:30px; display:block; margin-bottom:8px}
+
+  .hint{font-size:12px; color:var(--muted); margin:10px 2px 0; line-height:1.5}
+  .hint b{color:var(--ink); font-weight:650}
+
+  /* Toast */
+  #toast{
+    position:fixed; left:50%; bottom:96px; transform:translateX(-50%) translateY(12px);
+    background:var(--ink); color:var(--bg); font-size:14px; font-weight:600;
+    padding:11px 16px; border-radius:12px; box-shadow:var(--shadow);
+    opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:50;
+    max-width:88vw; text-align:center;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  /* PDF viewer fallback (when the native share sheet isn't available) */
+  .pdfview{
+    position:fixed; inset:0; z-index:60; background:var(--bg);
+    display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+  }
+  .pv-bar{
+    display:flex; align-items:center; gap:10px; padding:12px 14px;
+    border-bottom:1px solid var(--line); background:var(--surface);
+  }
+  .pv-title{font-weight:750; font-size:15px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .pv-close{
+    appearance:none; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--ink); width:36px; height:36px; border-radius:10px; font-size:20px;
+    line-height:1; cursor:pointer; flex:0 0 auto;
+  }
+  .pv-hint{
+    font-size:13px; color:var(--muted); line-height:1.5;
+    padding:11px 14px; background:var(--accent-weak); color:var(--ink);
+    border-bottom:1px solid var(--line);
+  }
+  .pv-hint b{font-weight:700; color:var(--accent)}
+  .pv-frame{flex:1; width:100%; border:0; background:var(--surface-2)}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">⚡</div>
+    <div>
+      <h1>Notes de chantier</h1>
+      <div class="sub" id="hdr-sub">Tech-Elec</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="theme" title="Thème" aria-label="Changer le thème">◐</button>
+  </header>
+
+  <!-- Compose -->
+  <section class="card" aria-label="Nouvelle note">
+    <p class="eyebrow">Nouvelle note</p>
+
+    <label class="field">
+      <span>Chantier</span>
+      <input type="text" id="chantier" list="chantiers" placeholder="N° ou nom — ex. 0205.25 Villvert" autocomplete="off" enterkeyhint="next">
+      <datalist id="chantiers"></datalist>
+    </label>
+
+    <label class="field" style="margin-bottom:8px">
+      <span>Note</span>
+      <textarea id="text" placeholder="Ce qui s'est dit, à faire, à vérifier…"></textarea>
+    </label>
+
+    <div class="media-row">
+      <label class="media-btn"><span class="g">📷</span>Photo
+        <input type="file" accept="image/*" capture="environment" data-add>
+      </label>
+      <label class="media-btn"><span class="g">🎬</span>Vidéo
+        <input type="file" accept="video/*" capture="environment" data-add>
+      </label>
+      <label class="media-btn"><span class="g">🖼️</span>Galerie
+        <input type="file" accept="image/*,video/*" multiple data-add>
+      </label>
+    </div>
+
+    <div class="thumbs" id="thumbs" hidden></div>
+    <p class="hint" id="compose-hint"><b>Envoyer le PDF</b> = un seul fichier (texte + photos). Si le menu de partage iOS s'ouvre → <b>« Enregistrer dans Fichiers »</b>. Sinon le PDF s'affiche en plein écran : utilisez <b>l'icône Partager de Safari</b> (⬆️) ou <b>Imprimer</b>. Les <b>photos/vidéos brutes</b> à part : bouton <b>Médias</b> sur la note enregistrée.</p>
+  </section>
+
+  <!-- Saved notes -->
+  <div class="list-head">
+    <h2>Enregistrées</h2>
+    <span class="count" id="list-count"></span>
+  </div>
+  <div id="list"></div>
+</div>
+
+<!-- Action bar -->
+<div class="actions">
+  <div class="actions-inner">
+    <button class="btn" id="save" disabled>Enregistrer</button>
+    <button class="btn primary" id="send" disabled><span>Envoyer le PDF</span></button>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+(function(){
+  /* ---------- tiny helpers ---------- */
+  const $ = s => document.querySelector(s);
+  const fmtSize = b => b < 1024 ? b+" o" : b < 1048576 ? (b/1024).toFixed(0)+" Ko" : (b/1048576).toFixed(1)+" Mo";
+  const fmtWhen = ts => new Date(ts).toLocaleString('fr-CH',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  let toastTimer;
+  function toast(msg){
+    const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2600);
+  }
+  const isVideo = t => (t||"").startsWith("video");
+  function extFor(file){
+    const map={'image/jpeg':'jpg','image/png':'png','image/heic':'heic','image/heif':'heif','image/webp':'webp','image/gif':'gif','video/mp4':'mp4','video/quicktime':'mov','video/webm':'webm','video/x-m4v':'m4v'};
+    if(map[file.type]) return map[file.type];
+    const m=(file.name||"").match(/\.([a-z0-9]+)$/i); return m?m[1].toLowerCase():"bin";
+  }
+  function slug(s){return (s||"note").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,24)||"note";}
+
+  /* ---------- object-URL registry (avoid leaks) ---------- */
+  const urls=new Set();
+  function objURL(blob){const u=URL.createObjectURL(blob); urls.add(u); return u;}
+  function clearURLs(){urls.forEach(u=>URL.revokeObjectURL(u)); urls.clear();}
+
+  /* ---------- storage: IndexedDB with in-memory fallback ---------- */
+  let db=null, memory=[]; // memory used only if IDB unavailable
+  function openDB(){
+    return new Promise(res=>{
+      let req;
+      try{ req=indexedDB.open("chantier-notes",1); }
+      catch(e){ return res(null); }
+      req.onupgradeneeded=e=>{ const d=e.target.result; if(!d.objectStoreNames.contains("notes")) d.createObjectStore("notes",{keyPath:"id"}); };
+      req.onsuccess=e=>res(e.target.result);
+      req.onerror=()=>res(null);
+    });
+  }
+  function tx(mode){return db.transaction("notes",mode).objectStore("notes");}
+  async function allNotes(){
+    if(!db) return memory.slice().sort((a,b)=>b.createdAt-a.createdAt);
+    return new Promise(res=>{ const r=tx("readonly").getAll(); r.onsuccess=()=>res(r.result.sort((a,b)=>b.createdAt-a.createdAt)); r.onerror=()=>res([]); });
+  }
+  async function putNote(n){ if(!db){ const i=memory.findIndex(x=>x.id===n.id); if(i>=0)memory[i]=n; else memory.push(n); return; }
+    return new Promise((res,rej)=>{ const r=tx("readwrite").put(n); r.onsuccess=res; r.onerror=()=>rej(r.error); }); }
+  async function delNote(id){ if(!db){ memory=memory.filter(x=>x.id!==id); return; }
+    return new Promise(res=>{ const r=tx("readwrite").delete(id); r.onsuccess=res; r.onerror=res; }); }
+
+  /* ---------- compose draft ---------- */
+  const draft={media:[]}; // media: {name,type,size,blob}
+  const elThumbs=$("#thumbs"), elChantier=$("#chantier"), elText=$("#text");
+
+  function refreshButtons(){
+    const has = elChantier.value.trim() || elText.value.trim() || draft.media.length;
+    $("#save").disabled = !has; $("#send").disabled = !has;
+  }
+  function renderThumbs(){
+    elThumbs.innerHTML="";
+    if(!draft.media.length){ elThumbs.hidden=true; return; }
+    elThumbs.hidden=false;
+    draft.media.forEach((m,i)=>{
+      const d=document.createElement("div"); d.className="thumb";
+      const media = isVideo(m.type)
+        ? `<video src="${objURL(m.blob)}" muted playsinline preload="metadata"></video><div class="play">▶</div>`
+        : `<img src="${objURL(m.blob)}" alt="">`;
+      d.innerHTML = media + `<span class="badge">${fmtSize(m.size)}</span>`
+        + `<button class="rm" data-i="${i}" aria-label="Retirer">×</button>`;
+      elThumbs.appendChild(d);
+    });
+  }
+  elThumbs.addEventListener("click",e=>{
+    const b=e.target.closest(".rm"); if(!b) return;
+    draft.media.splice(+b.dataset.i,1); renderThumbs(); refreshButtons();
+  });
+
+  async function addFiles(fileList){
+    const base=slug(elChantier.value), t=Date.now();
+    let n=0;
+    for(const f of fileList){
+      if(!f || !f.type) continue;
+      const blob=f.slice(0,f.size,f.type);
+      draft.media.push({name:`${base}_${t}_${draft.media.length+1}.${extFor(f)}`, type:f.type, size:f.size, blob});
+      n++;
+    }
+    if(n){ renderThumbs(); refreshButtons(); }
+  }
+  document.querySelectorAll("input[data-add]").forEach(inp=>{
+    inp.addEventListener("change",()=>{ if(inp.files&&inp.files.length) addFiles(inp.files); inp.value=""; });
+  });
+  elChantier.addEventListener("input",refreshButtons);
+  elText.addEventListener("input",refreshButtons);
+
+  function currentNote(){
+    return { id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
+      chantier:elChantier.value.trim(), text:elText.value.trim(),
+      createdAt:Date.now(), sent:false, sentAt:null,
+      media:draft.media.map(m=>({name:m.name,type:m.type,size:m.size,blob:m.blob})) };
+  }
+  function resetCompose(){
+    elChantier.value=""; elText.value=""; draft.media=[];
+    renderThumbs(); refreshButtons();
+  }
+
+  /* ---------- share ---------- */
+  function noteText(n){
+    let s="";
+    if(n.chantier) s+="Chantier : "+n.chantier+"\n";
+    s+=fmtWhen(n.createdAt)+"\n";
+    if(n.text) s+="\n"+n.text+"\n";
+    return s.trim();
+  }
+  function fileBase(n){
+    const d=new Date(n.createdAt), p=x=>String(x).padStart(2,"0");
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}_${slug(n.chantier)}`;
+  }
+
+  /* ---------- PDF generation (no external library) ---------- */
+  const strBytes = s => { const a=new Uint8Array(s.length); for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i)&0xff; return a; };
+  function encWinAnsi(s){
+    const map={'’':0x92,'‘':0x91,'“':0x93,'”':0x94,'–':0x96,'—':0x97,'…':0x85,'€':0x80,'•':0x95,'«':0xAB,'»':0xBB,'°':0xB0};
+    const out=[]; for(const ch of s){ let c=map[ch]!==undefined?map[ch]:ch.codePointAt(0); if(c>255)c=0x3F; out.push(c); } return out;
+  }
+  function contentBuf(){
+    const parts=[];
+    return {
+      raw:s=>parts.push(strBytes(s)),
+      text:s=>{ const b=encWinAnsi(s); const out=[0x28]; for(const c of b){ if(c===0x28||c===0x29||c===0x5C)out.push(0x5C); out.push(c);} out.push(0x29); parts.push(new Uint8Array(out)); },
+      done:()=>{ let L=0; parts.forEach(p=>L+=p.length); const u=new Uint8Array(L); let o=0; parts.forEach(p=>{u.set(p,o);o+=p.length;}); return u; }
+    };
+  }
+  function wrapText(t,max){
+    const out=[];
+    for(const para of (t||"").split(/\r?\n/)){
+      if(para===""){ out.push(""); continue; }
+      let line="";
+      for(const word of para.split(/\s+/)){
+        if(((line?line+" ":"")+word).length>max){
+          if(line){ out.push(line); line=""; }
+          if(word.length>max){ let w=word; while(w.length>max){ out.push(w.slice(0,max)); w=w.slice(max);} line=w; }
+          else line=word;
+        } else line = line?line+" "+word:word;
+      }
+      if(line) out.push(line);
+    }
+    return out;
+  }
+  function loadImage(blob){
+    return new Promise((res,rej)=>{ const url=URL.createObjectURL(blob); const img=new Image();
+      img.onload=()=>res(img); img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("img"));}; img.src=url; });
+  }
+  async function toJPEG(blob,maxDim,q){
+    const img=await loadImage(blob);
+    const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+    const s=Math.min(1,maxDim/Math.max(w,h));
+    const cw=Math.max(1,Math.round(w*s)), ch=Math.max(1,Math.round(h*s));
+    const cv=document.createElement("canvas"); cv.width=cw; cv.height=ch;
+    const ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cw,ch); ctx.drawImage(img,0,0,cw,ch);
+    const durl=cv.toDataURL("image/jpeg",q); URL.revokeObjectURL(img.src);
+    const bin=atob(durl.split(",")[1]); const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return {bytes,w:cw,h:ch};
+  }
+  async function buildNotePDF(n){
+    const PW=595.28, PH=841.89, M=48;
+    const imgs=[];
+    for(const m of (n.media||[])){ if(isVideo(m.type)) continue; try{ imgs.push(await toJPEG(m.blob,1600,0.82)); }catch(e){} }
+
+    const chunks=[]; let len=0;
+    const put=u8=>{chunks.push(u8); len+=u8.length;};
+    const putS=s=>put(strBytes(s));
+    const off=[]; const beginObj=num=>{off[num]=len; putS(num+" 0 obj\n");}; const endObj=()=>putS("\nendobj\n");
+
+    // number allocation
+    let obj=0; const N=()=>++obj;
+    const catalog=N(), pagesObj=N(), font=N();
+    const imgNums=imgs.map(()=>N());
+    const resObj=N();
+    const bodyLines=wrapText(n.text||"",92);
+    const perPage=42;
+    const textChunks=[]; for(let i=0;i<Math.max(1,Math.ceil(bodyLines.length/perPage));i++) textChunks.push(bodyLines.slice(i*perPage,(i+1)*perPage));
+    const pages=[]; // {pageNum, contentNum, kind, data}
+    textChunks.forEach((lines,i)=>pages.push({pageNum:N(),contentNum:N(),kind:"text",lines,first:i===0}));
+    imgs.forEach((im,i)=>pages.push({pageNum:N(),contentNum:N(),kind:"img",idx:i}));
+
+    putS("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+    beginObj(catalog); putS(`<< /Type /Catalog /Pages ${pagesObj} 0 R >>`); endObj();
+    beginObj(pagesObj); putS(`<< /Type /Pages /Kids [${pages.map(p=>p.pageNum+" 0 R").join(" ")}] /Count ${pages.length} >>`); endObj();
+    beginObj(font); putS("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"); endObj();
+    imgs.forEach((im,i)=>{ beginObj(imgNums[i]);
+      putS(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`);
+      put(im.bytes); putS("\nendstream"); endObj();
+    });
+    const xobj=imgs.map((im,i)=>`/Im${i} ${imgNums[i]} 0 R`).join(" ");
+    beginObj(resObj); putS(`<< /Font << /F1 ${font} 0 R >> /XObject << ${xobj} >> >>`); endObj();
+
+    for(const pg of pages){
+      const c=contentBuf();
+      if(pg.kind==="text"){
+        c.raw("BT\n");
+        let y=PH-M;
+        if(pg.first){
+          c.raw(`/F1 16 Tf\n1 0 0 1 ${M} ${y.toFixed(2)} Tm\n`); c.text(n.chantier||"Note de chantier"); c.raw(" Tj\n");
+          c.raw("/F1 10 Tf\n0 -18 Td\n"); c.text(fmtWhen(n.createdAt)); c.raw(" Tj\n");
+          c.raw("/F1 11 Tf\n0 -26 Td\n14 TL\n");
+        } else {
+          c.raw(`/F1 11 Tf\n1 0 0 1 ${M} ${(PH-M).toFixed(2)} Tm\n14 TL\n`);
+        }
+        for(const ln of pg.lines){ if(ln===""){ c.raw("T*\n"); continue; } c.text(ln); c.raw(" Tj\nT*\n"); }
+        c.raw("ET");
+      } else {
+        const im=imgs[pg.idx], availW=PW-2*M, availH=PH-2*M;
+        const s=Math.min(availW/im.w,availH/im.h), w=im.w*s, h=im.h*s, x=(PW-w)/2, yy=(PH-h)/2;
+        c.raw(`q\n${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${yy.toFixed(2)} cm\n/Im${pg.idx} Do\nQ`);
+      }
+      const body=c.done();
+      beginObj(pg.pageNum); putS(`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources ${resObj} 0 R /Contents ${pg.contentNum} 0 R >>`); endObj();
+      beginObj(pg.contentNum); putS(`<< /Length ${body.length} >>\nstream\n`); put(body); putS("\nendstream"); endObj();
+    }
+
+    const xref=len;
+    putS(`xref\n0 ${obj+1}\n0000000000 65535 f \n`);
+    for(let i=1;i<=obj;i++) putS(String(off[i]||0).padStart(10,"0")+" 00000 n \n");
+    putS(`trailer\n<< /Size ${obj+1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF`);
+
+    const bytes=new Uint8Array(len); let o=0; chunks.forEach(c=>{bytes.set(c,o);o+=c.length;});
+    return new File([bytes], fileBase(n)+".pdf", {type:"application/pdf"});
+  }
+
+  function mediaFiles(n){
+    return (n.media||[]).map((m,i)=>{
+      const ext=(m.name.match(/\.([a-z0-9]+)$/i)||[,"bin"])[1];
+      return new File([m.blob], `${fileBase(n)}_${i+1}.${ext}`, {type:m.type});
+    });
+  }
+
+  /* ---------- PDF viewer fallback ----------
+     When the native share sheet isn't available (common for a local file /
+     home-screen web app on iOS), we can't push the file anywhere silently.
+     So we show the PDF full-screen and let the user use Safari's own
+     Share / Print to save it. This ALWAYS gives the PDF a way out. */
+  function showPdfViewer(pdf, n){
+    const url=objURL(pdf);
+    const ov=document.createElement("div"); ov.className="pdfview";
+    ov.innerHTML=
+      `<div class="pv-bar">`
+      + `<div class="pv-title">PDF prêt — ${n.chantier?escapeHtml(n.chantier):"note"}</div>`
+      + `<button class="pv-close" aria-label="Fermer">×</button>`
+      + `</div>`
+      + `<div class="pv-hint">Touchez <b>l'icône Partager</b> de Safari (⬆️) puis <b>« Enregistrer dans Fichiers »</b> ou <b>« Envoyer »</b>. Ou <b>Imprimer</b> pour un PDF.</div>`
+      + `<iframe class="pv-frame" src="${url}" title="Aperçu PDF"></iframe>`;
+    document.body.appendChild(ov);
+    ov.querySelector(".pv-close").addEventListener("click",()=>{ ov.remove(); });
+    toast("PDF prêt ✓");
+  }
+
+  // Try the native share sheet FIRST (works when installed as a proper web app
+  // over https). If it's unavailable or the browser refuses file-sharing, fall
+  // back to the full-screen viewer. Marks the note sent only on a real share.
+  async function sendPDF(n){
+    toast("Génération du PDF…");
+    let pdf;
+    try{ pdf=await buildNotePDF(n); }
+    catch(e){ console.warn("pdf failed",e); toast("Échec de génération du PDF."); return; }
+    const meta={ title:n.chantier?("Note — "+n.chantier):"Note de chantier", text:noteText(n) };
+    if(navigator.canShare && navigator.canShare({files:[pdf]})){
+      try{
+        await navigator.share(Object.assign({},meta,{files:[pdf]}));
+        await markSent(n.id);
+        return;
+      }catch(e){
+        if(e && e.name==="AbortError") return; // user opened the sheet then cancelled
+        console.warn("share failed",e);        // otherwise fall through to the viewer
+      }
+    }
+    showPdfViewer(pdf, n);
+  }
+  async function sendMedia(n){
+    const files=mediaFiles(n);
+    if(!files.length){ toast("Aucune photo/vidéo."); return; }
+    const meta={ title:n.chantier?("Note — "+n.chantier):"Note de chantier", text:noteText(n) };
+    if(navigator.canShare && navigator.canShare({files})){
+      try{ await navigator.share(Object.assign({},meta,{files})); toast("Médias prêts ✓"); return; }
+      catch(e){ if(e && e.name==="AbortError") return; console.warn("share failed",e); }
+    }
+    toast("Partage des médias indisponible ici — ouvrez l'app comme app installée (écran d'accueil, https).");
+  }
+
+  async function markSent(id){
+    const list=await allNotes(); const n=list.find(x=>x.id===id);
+    if(n){ n.sent=true; n.sentAt=Date.now(); await putNote(n); render(); }
+  }
+
+  /* ---------- actions ----------
+     Order matters on iOS: the share sheet must be reached as fast as possible
+     after the tap (transient activation). So we persist the note, then build +
+     share, and only clear/refresh the compose form AFTERWARDS. No full list
+     re-render happens before the share call. */
+  $("#save").addEventListener("click",async()=>{
+    const n=currentNote(); await putNote(n); resetCompose(); render(); toast("Enregistré");
+  });
+  $("#send").addEventListener("click",async()=>{
+    const n=currentNote();
+    await putNote(n);       // fast persist, no heavy DOM
+    await sendPDF(n);       // build + share while the tap is still "fresh"
+    resetCompose(); render();
+  });
+
+  /* ---------- render saved list ---------- */
+  const elList=$("#list");
+  let confirmId=null, confirmTimer=null;
+  async function render(){
+    clearURLs();
+    const notes=await allNotes();
+    // datalist of chantiers
+    const names=[...new Set(notes.map(n=>n.chantier).filter(Boolean))].slice(0,30);
+    $("#chantiers").innerHTML=names.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join("");
+    $("#list-count").textContent=notes.length?`${notes.length}`:"";
+    $("#hdr-sub").textContent = notes.length ? `${notes.length} note${notes.length>1?"s":""}` : "Tech-Elec";
+
+    if(!notes.length){
+      elList.innerHTML=`<div class="empty"><span class="g">🗒️</span>Aucune note pour l'instant.<br>Saisissez la première ci-dessus.</div>`;
+      return;
+    }
+    elList.innerHTML="";
+    for(const n of notes){
+      const card=document.createElement("div"); card.className="card note";
+      const mini=(n.media||[]).map(m=>{
+        const src=objURL(m.blob);
+        return isVideo(m.type)
+          ? `<div class="m"><video src="${src}" muted playsinline preload="metadata"></video><div class="pl">▶</div></div>`
+          : `<div class="m"><img src="${src}" alt=""></div>`;
+      }).join("");
+      const confirming = confirmId===n.id;
+      card.innerHTML=`
+        <div class="top">
+          <span class="chantier">${n.chantier?escapeHtml(n.chantier):"— sans chantier —"}</span>
+          <span class="when">${fmtWhen(n.createdAt)}</span>
+        </div>
+        <p class="body${n.text?"":" empty"}">${n.text?escapeHtml(n.text):"(pas de texte)"}</p>
+        ${mini?`<div class="mini">${mini}</div>`:""}
+        <div class="row">
+          <span class="pill ${n.sent?"sent":""}">${n.sent?"✓ envoyé":(n.media&&n.media.length?`${n.media.length} média${n.media.length>1?"s":""}`:"brouillon")}</span>
+          <span class="grow"></span>
+          <button class="mini-btn danger" data-del="${n.id}">${confirming?"Confirmer ?":"Suppr."}</button>
+          ${(n.media&&n.media.length)?`<button class="mini-btn" data-media="${n.id}">Médias</button>`:""}
+          <button class="mini-btn send" data-pdf="${n.id}">PDF</button>
+        </div>`;
+      elList.appendChild(card);
+    }
+  }
+  function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+  elList.addEventListener("click",async e=>{
+    const pdf=e.target.closest("[data-pdf]"); const med=e.target.closest("[data-media]"); const d=e.target.closest("[data-del]");
+    if(pdf){ const notes=await allNotes(); const n=notes.find(x=>x.id===pdf.dataset.pdf); if(n) sendPDF(n); return; }
+    if(med){ const notes=await allNotes(); const n=notes.find(x=>x.id===med.dataset.media); if(n) sendMedia(n); return; }
+    if(d){
+      const id=d.dataset.del;
+      if(confirmId===id){ clearTimeout(confirmTimer); confirmId=null; await delNote(id); render(); toast("Supprimé"); }
+      else{ confirmId=id; render(); clearTimeout(confirmTimer); confirmTimer=setTimeout(()=>{confirmId=null; render();},3000); }
+    }
+  });
+
+  /* ---------- theme ---------- */
+  const root=document.documentElement;
+  try{ const saved=localStorage.getItem("cn-theme"); if(saved) root.setAttribute("data-theme",saved); }catch(e){}
+  $("#theme").addEventListener("click",()=>{
+    const cur=root.getAttribute("data-theme");
+    const sysDark=window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches;
+    const next = cur ? (cur==="dark"?"light":"dark") : (sysDark?"light":"dark");
+    root.setAttribute("data-theme",next);
+    try{ localStorage.setItem("cn-theme",next); }catch(e){}
+  });
+
+  /* ---------- boot ---------- */
+  (async()=>{
+    db=await openDB();
+    if(!db) toast("Stockage local indisponible — notes gardées en mémoire seulement.");
+    refreshButtons(); render();
+  })();
+})();
+</script>
+</body>
+</html>
