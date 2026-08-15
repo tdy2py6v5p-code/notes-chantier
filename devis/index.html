@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Devis">
 <meta name="description" content="Devis rapide Tech-Elec — main d'œuvre, déplacement, matériel, export PDF.">
-<meta name="app-version" content="2026.08.15.4">
+<meta name="app-version" content="2026.08.15.5">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="../icon-180.png">
 <link rel="icon" type="image/png" href="../icon-180.png">
@@ -524,57 +524,70 @@
   /* ---------- PDF generation (no external library) ---------- */
   const strBytes = s => { const a=new Uint8Array(s.length); for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i)&0xff; return a; };
   function encWinAnsi(s){
-    const map={'’':0x92,'‘':0x91,'“':0x93,'”':0x94,'–':0x96,'—':0x97,'…':0x85,'€':0x80,'•':0x95,'«':0xAB,'»':0xBB,'°':0xB0};
+    const map={'’':0x92,'‘':0x91,'“':0x93,'”':0x94,'–':0x96,'—':0x97,'…':0x85,'€':0x80,'•':0x95,'«':0xAB,'»':0xBB,'°':0xB0,'œ':0x9C,'Œ':0x8C,'ÿ':0xFF,'Ÿ':0x9F};
     const out=[]; for(const ch of s){ let c=map[ch]!==undefined?map[ch]:ch.codePointAt(0); if(c>255)c=0x3F; out.push(c); } return out;
   }
   function contentBuf(){
-    const parts=[];
+    const parts=[]; let inText=false;
+    const raw=s=>parts.push(strBytes(s));
+    const ensureText=()=>{ if(!inText){ raw("BT\n"); inText=true; } };
+    const ensureGfx=()=>{ if(inText){ raw("ET\n"); inText=false; } };
     return {
-      raw:s=>parts.push(strBytes(s)),
-      text:s=>{ const b=encWinAnsi(s); const out=[0x28]; for(const c of b){ if(c===0x28||c===0x29||c===0x5C)out.push(0x5C); out.push(c);} out.push(0x29); parts.push(new Uint8Array(out)); },
-      done:()=>{ let L=0; parts.forEach(p=>L+=p.length); const u=new Uint8Array(L); let o=0; parts.forEach(p=>{u.set(p,o);o+=p.length;}); return u; }
+      font:(name,size)=>{ ensureText(); raw(`/${name} ${size} Tf\n`); },
+      moveTo:(x,y)=>{ ensureText(); raw(`1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm\n`); },
+      color:rgb=>raw(rgb+" rg\n"),
+      show:s=>{ ensureText(); const b=encWinAnsi(s); const out=[0x28]; for(const c of b){ if(c===0x28||c===0x29||c===0x5C)out.push(0x5C); out.push(c);} out.push(0x29); parts.push(new Uint8Array(out)); raw(" Tj\n"); },
+      line:(x0,y0,x1,y1,rgb,width)=>{ ensureGfx(); raw(`${(width||0.75).toFixed(2)} w\n${rgb} RG\n${x0.toFixed(2)} ${y0.toFixed(2)} m ${x1.toFixed(2)} ${y1.toFixed(2)} l S\n`); },
+      done:()=>{ ensureGfx(); let L=0; parts.forEach(p=>L+=p.length); const u=new Uint8Array(L); let o=0; parts.forEach(p=>{u.set(p,o);o+=p.length;}); return u; }
     };
   }
-  function padRow(label,amount,width){
-    label=label||""; amount=amount||"";
-    if(label.length + amount.length + 1 > width){ label = label.slice(0, Math.max(0,width-amount.length-2))+"…"; }
-    const pad = Math.max(1, width - label.length - amount.length);
-    return label + " ".repeat(pad) + amount;
+  function rAlign(str,widthPt,fontSize){
+    const chars=Math.max(1, Math.floor(widthPt/(0.6*fontSize)));
+    str=String(str);
+    return str.length>=chars ? str.slice(-chars) : " ".repeat(chars-str.length)+str;
+  }
+  function truncDesc(str,widthPt,fontSize){
+    const chars=Math.max(1, Math.floor(widthPt/(0.52*fontSize)));
+    return str.length<=chars ? str : str.slice(0,Math.max(0,chars-1))+"…";
   }
   function fmtWhen(ts){ return new Date(ts).toLocaleDateString('fr-CH',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+
+  const RGB_INK="0.137 0.122 0.125", RGB_MUTED="0.435 0.451 0.376",
+        RGB_ACCENT_DEEP="0.361 0.541 0.161", RGB_LINE="0.882 0.902 0.839";
 
   async function buildDevisPDF(){
     const client=$("#client").value.trim();
     const heures=num($("#heures")), km=num($("#km"));
     const mo=moTotal(), mat=matTotal(), ht=mo+mat, tvaAmt=ht*settings.tva/100, ttc=ht+tvaAmt;
-    const W=80;
 
-    const rows=[]; // {kind:'h1'|'h2'|'line'|'gap'|'total', text/label/amount}
-    rows.push({kind:"line", text:fmtWhen(Date.now())});
-    rows.push({kind:"gap"});
-    if(heures>0) rows.push({kind:"row", label:`Main d'œuvre — ${heures} h × ${fmtCHF(settings.tarif)}/h`, amount:fmtCHF(heures*settings.tarif)});
-    if(km>0) rows.push({kind:"row", label:`Déplacement — ${km} km × ${fmtCHF(settings.km)}/km`, amount:fmtCHF(km*settings.km)});
-    if(lines.length){
-      if(heures>0||km>0) rows.push({kind:"gap"});
-      for(const l of lines){ const pu=l.prix*settings.facteur; rows.push({kind:"row", label:`${l.desig} — ${l.qte} × ${fmtCHF(pu)}`, amount:fmtCHF(l.qte*pu)}); }
-    }
-    rows.push({kind:"rule"});
-    rows.push({kind:"row", label:"Sous-total HT", amount:fmtCHF(ht)});
-    rows.push({kind:"row", label:`TVA ${settings.tva}%`, amount:fmtCHF(tvaAmt)});
-    rows.push({kind:"rule"});
-    rows.push({kind:"total", label:"Total TTC", amount:fmtCHF(ttc)});
+    const items=[]; // {desc, qte, pu, montant}
+    if(heures>0) items.push({desc:"Main d'œuvre", qte:`${heures} h`, pu:fmtCHF(settings.tarif)+"/h", montant:fmtCHF(heures*settings.tarif)});
+    if(km>0) items.push({desc:"Déplacement", qte:`${km} km`, pu:fmtCHF(settings.km)+"/km", montant:fmtCHF(km*settings.km)});
+    for(const l of lines){ const pu=l.prix*settings.facteur; items.push({desc:l.desig, qte:`${l.qte} pce`, pu:fmtCHF(pu), montant:fmtCHF(l.qte*pu)}); }
 
     const PW=595.28, PH=841.89, M=48;
-    const chunks=[]; let len=0;
-    const put=u8=>{chunks.push(u8); len+=u8.length;};
+    const colDescW=255, colQteW=55, colPuW=85, colMontW=(PW-2*M)-colDescW-colQteW-colPuW;
+    const xDesc=M, xQte=xDesc+colDescW, xPu=xQte+colQteW, xMont=xPu+colPuW;
+    const rowH=15;
+
+    const rowsPerFirst=22, rowsPerNext=34;
+    const chunks=[]; let idx=0;
+    if(!items.length) chunks.push([]);
+    while(idx<items.length){
+      const cap=chunks.length===0?rowsPerFirst:rowsPerNext;
+      chunks.push(items.slice(idx, idx+cap)); idx+=cap;
+    }
+    const lastCap=chunks.length===1?rowsPerFirst:rowsPerNext;
+    if(chunks[chunks.length-1].length>lastCap-5) chunks.push([]);
+
+    const chunksOut=[]; let len=0;
+    const put=u8=>{chunksOut.push(u8); len+=u8.length;};
     const putS=s=>put(strBytes(s));
     const off=[]; const beginObj=n=>{off[n]=len; putS(n+" 0 obj\n");}; const endObj=()=>putS("\nendobj\n");
     let obj=0; const N=()=>++obj;
     const catalog=N(), pagesObj=N(), fHelv=N(), fHelvB=N(), fCour=N();
 
-    const perPage=48;
-    const chunksOfRows=[]; for(let i=0;i<Math.max(1,Math.ceil(rows.length/perPage));i++) chunksOfRows.push(rows.slice(i*perPage,(i+1)*perPage));
-    const pages=chunksOfRows.map((rs,i)=>({pageNum:N(),contentNum:N(),rows:rs,first:i===0}));
+    const pages=chunks.map(()=>({pageNum:N(),contentNum:N()}));
 
     putS("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
     beginObj(catalog); putS(`<< /Type /Catalog /Pages ${pagesObj} 0 R >>`); endObj();
@@ -585,28 +598,79 @@
     const resObj=N();
     beginObj(resObj); putS(`<< /Font << /F1 ${fHelv} 0 R /F2 ${fHelvB} 0 R /F3 ${fCour} 0 R >> >>`); endObj();
 
-    for(const pg of pages){
+    for(let pi=0; pi<chunks.length; pi++){
+      const pageItems=chunks[pi], isFirst=pi===0, isLast=pi===chunks.length-1;
       const c=contentBuf();
-      c.raw("BT\n");
       let y=PH-M;
-      if(pg.first){
-        c.raw(`/F2 18 Tf\n1 0 0 1 ${M} ${y.toFixed(2)} Tm\n`); c.text("Devis — Tech-Elec"); c.raw(" Tj\n");
-        c.raw("/F1 11 Tf\n0 -20 Td\n"); c.text(client?client:"Sur chantier"); c.raw(" Tj\n");
-        c.raw("/F3 10 Tf\n0 -22 Td\n13.5 TL\n");
+
+      if(isFirst){
+        c.font("F2",14); c.color(RGB_INK); c.moveTo(M,y); c.show("Tech-elec SA");
+        y-=17;
+        c.font("F1",8.5); c.color(RGB_MUTED);
+        for(const l of ["Route de Bercher 7","1045 Ogens","021 881 14 14","info@tech-elec.ch"]){ c.moveTo(M,y); c.show(l); y-=11; }
+        y-=8;
+        c.moveTo(M,y); c.show(`Ogens, le ${fmtWhen(Date.now())}`);
+        y-=26;
+        c.font("F2",15); c.color(RGB_INK);
+        c.moveTo(M,y); c.show(client?`DEVIS — ${client}`:"DEVIS — sur chantier");
+        y-=10;
+        c.line(M,y,PW-M,y,RGB_LINE,0.75);
+        y-=18;
       } else {
-        c.raw(`/F3 10 Tf\n1 0 0 1 ${M} ${(PH-M).toFixed(2)} Tm\n13.5 TL\n`);
+        c.font("F1",9); c.color(RGB_MUTED);
+        c.moveTo(M,y); c.show(`Devis${client?" — "+client:""} (suite)`);
+        y-=22;
       }
-      for(const r of pg.rows){
-        if(r.kind==="gap"){ c.raw("T*\n"); continue; }
-        if(r.kind==="rule"){ c.text("-".repeat(W)); c.raw(" Tj\nT*\n"); continue; }
-        if(r.kind==="line"){ c.raw("/F1 10 Tf\n"); c.text(r.text); c.raw(" Tj\n/F3 10 Tf\nT*\n"); continue; }
-        if(r.kind==="total"){ c.raw("/F2 13 Tf\n"); c.text(padRow(r.label,r.amount,W-4)); c.raw(" Tj\n/F3 10 Tf\nT*\n"); continue; }
-        c.text(padRow(r.label,r.amount,W)); c.raw(" Tj\nT*\n");
+
+      c.font("F2",8.5); c.color(RGB_INK);
+      c.moveTo(xDesc,y); c.show("Description");
+      c.moveTo(xQte,y); c.show(rAlign("Qté",colQteW,8.5));
+      c.moveTo(xPu,y); c.show(rAlign("Prix unit.",colPuW,8.5));
+      c.moveTo(xMont,y); c.show(rAlign("Montant",colMontW,8.5));
+      y-=5;
+      c.line(M,y,PW-M,y,RGB_INK,0.9);
+      y-=13;
+
+      for(const it of pageItems){
+        c.font("F1",9); c.color(RGB_INK);
+        c.moveTo(xDesc,y); c.show(truncDesc(it.desc,colDescW-4,9));
+        c.font("F3",8.5);
+        c.moveTo(xQte,y); c.show(rAlign(it.qte,colQteW,8.5));
+        c.moveTo(xPu,y); c.show(rAlign(it.pu,colPuW,8.5));
+        c.moveTo(xMont,y); c.show(rAlign(it.montant,colMontW,8.5));
+        y-=rowH;
       }
-      c.raw("ET");
+
+      if(isLast){
+        y-=4;
+        c.line(M,y,PW-M,y,RGB_LINE,0.75);
+        y-=16;
+        const boxX=xPu-10;
+        c.font("F1",9.5); c.color(RGB_INK);
+        c.moveTo(boxX,y); c.show("Sous-total HT");
+        c.font("F3",9.5);
+        c.moveTo(xMont,y); c.show(rAlign(fmtCHF(ht),colMontW,9.5));
+        y-=15;
+        c.font("F1",9.5);
+        c.moveTo(boxX,y); c.show(`TVA ${settings.tva}%`);
+        c.font("F3",9.5);
+        c.moveTo(xMont,y); c.show(rAlign(fmtCHF(tvaAmt),colMontW,9.5));
+        y-=8;
+        c.line(boxX,y,PW-M,y,RGB_INK,0.9);
+        y-=17;
+        c.font("F2",12); c.color(RGB_ACCENT_DEEP);
+        c.moveTo(boxX,y); c.show("Total TTC");
+        c.font("F3",12);
+        c.moveTo(xMont,y); c.show(rAlign(fmtCHF(ttc),colMontW,12));
+      }
+
+      c.font("F1",7.5); c.color(RGB_MUTED);
+      c.moveTo(M,30); c.show("Tech-elec SA · Route de Bercher 7 · 1045 Ogens · 021 881 14 14 · info@tech-elec.ch");
+      c.moveTo(PW-M-40,30); c.show(`${pi+1} / ${chunks.length}`);
+
       const body=c.done();
-      beginObj(pg.pageNum); putS(`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources ${resObj} 0 R /Contents ${pg.contentNum} 0 R >>`); endObj();
-      beginObj(pg.contentNum); putS(`<< /Length ${body.length} >>\nstream\n`); put(body); putS("\nendstream"); endObj();
+      beginObj(pages[pi].pageNum); putS(`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources ${resObj} 0 R /Contents ${pages[pi].contentNum} 0 R >>`); endObj();
+      beginObj(pages[pi].contentNum); putS(`<< /Length ${body.length} >>\nstream\n`); put(body); putS("\nendstream"); endObj();
     }
 
     const xref=len;
@@ -614,7 +678,7 @@
     for(let i=1;i<=obj;i++) putS(String(off[i]||0).padStart(10,"0")+" 00000 n \n");
     putS(`trailer\n<< /Size ${obj+1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF`);
 
-    const bytes=new Uint8Array(len); let o=0; chunks.forEach(c=>{bytes.set(c,o);o+=c.length;});
+    const bytes=new Uint8Array(len); let o=0; chunksOut.forEach(c=>{bytes.set(c,o);o+=c.length;});
     const d=new Date(), p=x=>String(x).padStart(2,"0");
     const base=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_devis${client?("_"+client.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,24)):""}`;
     return new File([bytes], base+".pdf", {type:"application/pdf"});
