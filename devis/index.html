@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f1f4ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151813" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Devis">
+<meta name="description" content="Devis rapide Tech-Elec — main d'œuvre, déplacement, matériel, export PDF.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<link rel="icon" type="image/png" href="../icon-180.png">
+<style>:root{color-scheme:light dark}html,body{margin:0;padding:0}img{max-width:100%}</style>
+<title>Devis rapide</title>
+<style>
+  :root{
+    --bg:#f1f4ea; --surface:#ffffff; --surface-2:#f6f8ef;
+    --ink:#231f20; --muted:#6f7360; --line:#e1e6d6;
+    --brand:#aaca59;
+    --accent:#aaca59; --accent-ink:#231f20; --accent-weak:#e9f1d6;
+    --accent-deep:#5c8a29;
+    --rust:#8a6d1e;
+    --success:#4b7d2a; --danger:#b23b3b;
+    --shadow:0 1px 2px rgba(30,40,15,.06), 0 6px 20px rgba(30,40,15,.07);
+    --font-sans:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,sans-serif;
+    --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#151813; --surface:#1e211a; --surface-2:#262a20;
+      --ink:#eef1e6; --muted:#9aa389; --line:#333829;
+      --brand:#aaca59;
+      --accent:#aaca59; --accent-ink:#17200c; --accent-weak:#2b331d;
+      --accent-deep:#a7cc58; --rust:#c39a3a;
+      --success:#79b84a; --danger:#e06a6a;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#151813; --surface:#1e211a; --surface-2:#262a20;
+    --ink:#eef1e6; --muted:#9aa389; --line:#333829;
+    --brand:#aaca59;
+    --accent:#aaca59; --accent-ink:#17200c; --accent-weak:#2b331d;
+    --accent-deep:#a7cc58; --rust:#c39a3a;
+    --success:#79b84a; --danger:#e06a6a;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--font-sans);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    line-height:1.45; padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:640px; margin:0 auto; padding:0 16px 132px}
+
+  header{
+    position:sticky; top:0; z-index:20; background:var(--bg);
+    padding:calc(env(safe-area-inset-top) + 14px) 16px 12px;
+    margin:0 -16px 4px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:12px;
+  }
+  header .mark{
+    width:40px; height:40px; border-radius:11px; flex:0 0 auto;
+    background:var(--brand); padding:6px;
+    display:grid; place-items:center;
+    box-shadow:var(--shadow);
+  }
+  header .mark svg{width:100%; height:100%; display:block}
+  header h1{font-size:17px; font-weight:750; margin:0; letter-spacing:-.01em; line-height:1.1}
+  header .sub{font-size:12px; color:var(--muted); font-family:var(--font-mono)}
+  header .spacer{flex:1}
+  .icon-btn{
+    appearance:none; border:1px solid var(--line); background:var(--surface);
+    color:var(--ink); width:38px; height:38px; border-radius:10px; font-size:17px;
+    display:grid; place-items:center; cursor:pointer;
+  }
+  .icon-btn:active{transform:scale(.94)}
+
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow); padding:16px; margin-top:14px;
+  }
+  .eyebrow{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 10px;
+    display:flex; align-items:center; gap:8px;
+  }
+
+  label.field{display:block; margin-bottom:12px}
+  .field:last-child{margin-bottom:0}
+  .field > span{
+    display:block; font-size:12.5px; font-weight:650; color:var(--muted);
+    margin-bottom:6px; letter-spacing:.01em;
+  }
+  input[type=text], input[type=number], textarea{
+    width:100%; font:inherit; color:var(--ink);
+    background:var(--surface-2); border:1px solid var(--line);
+    border-radius:12px; padding:12px 13px; outline:none; resize:vertical;
+  }
+  input[type=number]{font-family:var(--font-mono); font-size:15px}
+  input:focus, textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-weak)}
+  ::placeholder{color:var(--muted); opacity:.7}
+
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+
+  .line-calc{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);
+    font-family:var(--font-mono); font-size:13px; color:var(--muted);
+  }
+  .line-calc b{color:var(--ink); font-size:14px}
+
+  /* materiel */
+  .mat-add{display:grid; grid-template-columns:1fr 84px 60px; gap:8px; align-items:end}
+  .mat-add label.field{margin-bottom:0}
+  .mat-add-btn{
+    appearance:none; cursor:pointer; font:inherit; font-weight:700; font-size:20px;
+    color:var(--accent-ink); background:var(--accent); border:none;
+    border-radius:12px; height:44px; align-self:end;
+  }
+  .em-link{
+    display:inline-flex; align-items:center; gap:6px; margin-top:10px;
+    font-size:12.5px; font-weight:650; color:var(--accent-deep); text-decoration:none;
+  }
+  .mat-list{margin-top:14px; display:flex; flex-direction:column; gap:8px}
+  .mat-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    background:var(--surface-2); border:1px solid var(--line); border-radius:12px;
+  }
+  .mat-item .desig{flex:1; font-size:13.5px; overflow-wrap:anywhere}
+  .mat-item .qtyprix{font-family:var(--font-mono); font-size:12px; color:var(--muted); white-space:nowrap}
+  .mat-item .total{font-family:var(--font-mono); font-weight:700; font-size:13.5px; white-space:nowrap}
+  .mat-item .rm{
+    appearance:none; border:none; background:transparent; color:var(--danger);
+    font-size:18px; line-height:1; cursor:pointer; padding:2px 4px; flex:0 0 auto;
+  }
+  .mat-empty{font-size:12.5px; color:var(--muted); text-align:center; padding:10px 0}
+
+  /* totals */
+  .totals{margin-top:14px}
+  .trow{display:flex; justify-content:space-between; align-items:baseline; padding:6px 0; font-size:14px}
+  .trow .l{color:var(--muted)}
+  .trow .v{font-family:var(--font-mono)}
+  .trow.total{border-top:1px solid var(--line); margin-top:4px; padding-top:12px}
+  .trow.total .l{color:var(--ink); font-weight:750; font-size:15px}
+  .trow.total .v{font-weight:800; font-size:22px; color:var(--accent-deep)}
+
+  .actions{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background:linear-gradient(to top, var(--bg) 72%, transparent);
+    padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);
+  }
+  .actions-inner{max-width:640px; margin:0 auto; display:flex; gap:10px}
+  .btn{
+    appearance:none; cursor:pointer; font:inherit; font-weight:700; font-size:16px;
+    border-radius:14px; padding:15px 16px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); flex:0 0 auto;
+  }
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .btn.primary{
+    flex:1; background:var(--accent); color:var(--accent-ink); border-color:transparent;
+    box-shadow:0 6px 18px rgba(120,168,46,.34);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{transform:translateY(1px)}
+
+  #toast{
+    position:fixed; left:50%; bottom:96px; transform:translateX(-50%) translateY(12px);
+    background:var(--ink); color:var(--bg); font-size:14px; font-weight:600;
+    padding:11px 16px; border-radius:12px; box-shadow:var(--shadow);
+    opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:50;
+    max-width:88vw; text-align:center;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  .pdfview{
+    position:fixed; inset:0; z-index:60; background:var(--bg);
+    display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+  }
+  .pv-bar{
+    display:flex; align-items:center; gap:10px; padding:12px 14px;
+    border-bottom:1px solid var(--line); background:var(--surface);
+  }
+  .pv-title{font-weight:750; font-size:15px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .pv-close{
+    appearance:none; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--ink); width:36px; height:36px; border-radius:10px; font-size:20px;
+    line-height:1; cursor:pointer; flex:0 0 auto;
+  }
+  .pv-hint{
+    font-size:13px; color:var(--ink); line-height:1.5;
+    padding:11px 14px; background:var(--accent-weak);
+    border-bottom:1px solid var(--line);
+  }
+  .pv-frame{flex:1; width:100%; border:0; background:var(--surface-2)}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="45.4" cy="8.6" r="2.1" fill="#fff"/><circle cx="54.6" cy="8.6" r="2.0" fill="#fff"/><circle cx="31.6" cy="16.9" r="2.5" fill="#fff"/><circle cx="40.8" cy="16.9" r="2.5" fill="#fff"/><circle cx="50.0" cy="16.9" r="2.5" fill="#fff"/><circle cx="59.2" cy="16.9" r="2.3" fill="#fff"/><circle cx="68.4" cy="16.9" r="2.1" fill="#fff"/><circle cx="17.8" cy="25.2" r="2.6" fill="#fff"/><circle cx="27.0" cy="25.2" r="2.9" fill="#fff"/><circle cx="36.2" cy="25.2" r="3.0" fill="#fff"/><circle cx="45.4" cy="25.2" r="3.0" fill="#fff"/><circle cx="54.6" cy="25.2" r="2.8" fill="#fff"/><circle cx="63.8" cy="25.2" r="2.6" fill="#fff"/><circle cx="73.0" cy="25.2" r="2.3" fill="#fff"/><circle cx="82.2" cy="25.2" r="1.9" fill="#fff"/><circle cx="13.2" cy="33.4" r="2.8" fill="#fff"/><circle cx="22.4" cy="33.4" r="3.2" fill="#fff"/><circle cx="31.6" cy="33.4" r="3.4" fill="#fff"/><circle cx="40.8" cy="33.4" r="3.4" fill="#fff"/><circle cx="50.0" cy="33.4" r="3.3" fill="#fff"/><circle cx="59.2" cy="33.4" r="3.1" fill="#fff"/><circle cx="68.4" cy="33.4" r="2.8" fill="#fff"/><circle cx="77.6" cy="33.4" r="2.4" fill="#fff"/><circle cx="86.8" cy="33.4" r="2.0" fill="#fff"/><circle cx="17.8" cy="41.7" r="3.3" fill="#fff"/><circle cx="27.0" cy="41.7" r="3.7" fill="#fff"/><circle cx="36.2" cy="41.7" r="3.9" fill="#fff"/><circle cx="45.4" cy="41.7" r="3.9" fill="#fff"/><circle cx="54.6" cy="41.7" r="3.6" fill="#fff"/><circle cx="63.8" cy="41.7" r="3.3" fill="#fff"/><circle cx="73.0" cy="41.7" r="2.8" fill="#fff"/><circle cx="82.2" cy="41.7" r="2.4" fill="#fff"/><circle cx="13.2" cy="50.0" r="3.3" fill="#fff"/><circle cx="22.4" cy="50.0" r="3.8" fill="#fff"/><circle cx="31.6" cy="50.0" r="4.2" fill="#fff"/><circle cx="40.8" cy="50.0" r="4.4" fill="#fff"/><circle cx="50.0" cy="50.0" r="4.1" fill="#fff"/><circle cx="59.2" cy="50.0" r="3.7" fill="#fff"/><circle cx="68.4" cy="50.0" r="3.3" fill="#fff"/><circle cx="77.6" cy="50.0" r="2.8" fill="#fff"/><circle cx="86.8" cy="50.0" r="2.3" fill="#fff"/><circle cx="17.8" cy="58.3" r="3.7" fill="#fff"/><circle cx="27.0" cy="58.3" r="4.2" fill="#fff"/><circle cx="36.2" cy="58.3" r="4.7" fill="#fff"/><circle cx="45.4" cy="58.3" r="4.6" fill="#fff"/><circle cx="54.6" cy="58.3" r="4.1" fill="#fff"/><circle cx="63.8" cy="58.3" r="3.6" fill="#fff"/><circle cx="73.0" cy="58.3" r="3.1" fill="#fff"/><circle cx="82.2" cy="58.3" r="2.6" fill="#fff"/><circle cx="13.2" cy="66.6" r="3.4" fill="#fff"/><circle cx="22.4" cy="66.6" r="3.9" fill="#fff"/><circle cx="31.6" cy="66.6" r="4.3" fill="#fff"/><circle cx="40.8" cy="66.6" r="4.5" fill="#fff"/><circle cx="50.0" cy="66.6" r="4.2" fill="#fff"/><circle cx="59.2" cy="66.6" r="3.8" fill="#fff"/><circle cx="68.4" cy="66.6" r="3.3" fill="#fff"/><circle cx="77.6" cy="66.6" r="2.8" fill="#fff"/><circle cx="86.8" cy="66.6" r="2.3" fill="#fff"/><circle cx="17.8" cy="74.8" r="3.4" fill="#fff"/><circle cx="27.0" cy="74.8" r="3.8" fill="#fff"/><circle cx="36.2" cy="74.8" r="4.1" fill="#fff"/><circle cx="45.4" cy="74.8" r="4.0" fill="#fff"/><circle cx="54.6" cy="74.8" r="3.8" fill="#fff"/><circle cx="63.8" cy="74.8" r="3.4" fill="#fff"/><circle cx="73.0" cy="74.8" r="2.9" fill="#fff"/><circle cx="82.2" cy="74.8" r="2.5" fill="#fff"/><circle cx="31.6" cy="83.1" r="3.6" fill="#fff"/><circle cx="40.8" cy="83.1" r="3.6" fill="#fff"/><circle cx="50.0" cy="83.1" r="3.5" fill="#fff"/><circle cx="59.2" cy="83.1" r="3.3" fill="#fff"/><circle cx="68.4" cy="83.1" r="2.9" fill="#fff"/><circle cx="45.4" cy="91.4" r="3.2" fill="#fff"/><circle cx="54.6" cy="91.4" r="3.0" fill="#fff"/></svg></div>
+    <div>
+      <h1>Devis rapide</h1>
+      <div class="sub" id="hdr-sub">Tech-Elec</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="theme" title="Thème" aria-label="Changer le thème">◐</button>
+  </header>
+
+  <section class="card" aria-label="Client">
+    <p class="eyebrow">Client / chantier</p>
+    <label class="field">
+      <span>Nom (optionnel, apparaît sur le PDF)</span>
+      <input type="text" id="client" placeholder="N° ou nom — ex. 0205.25 Villvert" autocomplete="off">
+    </label>
+  </section>
+
+  <section class="card" aria-label="Réglages">
+    <p class="eyebrow">Réglages<span class="grow" style="flex:1"></span></p>
+    <div class="row3">
+      <label class="field">
+        <span>Tarif horaire</span>
+        <input type="number" id="set-tarif" inputmode="decimal" step="1" min="0">
+      </label>
+      <label class="field">
+        <span>Tarif km</span>
+        <input type="number" id="set-km" inputmode="decimal" step="0.05" min="0">
+      </label>
+      <label class="field">
+        <span>TVA %</span>
+        <input type="number" id="set-tva" inputmode="decimal" step="0.1" min="0">
+      </label>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Main d'œuvre et déplacement">
+    <p class="eyebrow">Main d'œuvre &amp; déplacement</p>
+    <div class="row2">
+      <label class="field">
+        <span>Heures</span>
+        <input type="number" id="heures" inputmode="decimal" step="0.25" min="0" placeholder="0">
+      </label>
+      <label class="field">
+        <span>Distance (km)</span>
+        <input type="number" id="km" inputmode="decimal" step="1" min="0" placeholder="0">
+      </label>
+    </div>
+    <div class="line-calc">
+      <span>Main d'œuvre + déplacement</span>
+      <b id="mo-total">CHF 0.00</b>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Matériel">
+    <p class="eyebrow">Matériel</p>
+    <div class="mat-add">
+      <label class="field">
+        <span>Désignation</span>
+        <input type="text" id="mat-desig" list="mat-favoris" placeholder="ex. Prise T13 encastrée" autocomplete="off">
+        <datalist id="mat-favoris"></datalist>
+      </label>
+      <label class="field">
+        <span>Prix</span>
+        <input type="number" id="mat-prix" inputmode="decimal" step="0.05" min="0" placeholder="0.00">
+      </label>
+      <label class="field">
+        <span>Qté</span>
+        <input type="number" id="mat-qte" inputmode="decimal" step="1" min="1" value="1">
+      </label>
+    </div>
+    <button class="mat-add-btn" id="mat-add" style="width:100%;margin-top:10px" aria-label="Ajouter la ligne">+ Ajouter la ligne</button>
+    <a class="em-link" href="https://www.elektro-material.ch/" target="_blank" rel="noopener">↗ Ouvrir Elektro-Material pour chercher un prix</a>
+    <div class="mat-list" id="mat-list"></div>
+  </section>
+
+  <section class="card totals" aria-label="Totaux">
+    <div class="trow"><span class="l">Sous-total HT</span><span class="v" id="t-ht">CHF 0.00</span></div>
+    <div class="trow"><span class="l" id="t-tva-label">TVA 8.1%</span><span class="v" id="t-tva">CHF 0.00</span></div>
+    <div class="trow total"><span class="l">Total TTC</span><span class="v" id="t-ttc">CHF 0.00</span></div>
+  </section>
+</div>
+
+<div class="actions">
+  <div class="actions-inner">
+    <button class="btn" id="reset">Nouveau</button>
+    <button class="btn primary" id="pdf"><span>PDF du devis</span></button>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+(function(){
+  const $ = s => document.querySelector(s);
+  let toastTimer;
+  function toast(msg){
+    const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2600);
+  }
+  function num(el){ const v=parseFloat(el.value); return isFinite(v)&&v>0?v:(isFinite(v)?v:0); }
+
+  function fmtCHF(n){
+    const neg = n<0; n=Math.abs(n)+1e-9;
+    let s = n.toFixed(2);
+    let [int,dec]=s.split(".");
+    int = int.replace(/\B(?=(\d{3})+(?!\d))/g,"'");
+    return "CHF "+(neg?"-":"")+int+"."+dec;
+  }
+
+  /* ---------- settings (persisted) ---------- */
+  const DEFAULTS = { tarif:110, km:1, tva:8.1 };
+  let settings = Object.assign({}, DEFAULTS);
+  try{ const s=JSON.parse(localStorage.getItem("devis-settings")||"null"); if(s) settings=Object.assign({},DEFAULTS,s); }catch(e){}
+  function saveSettings(){ try{ localStorage.setItem("devis-settings", JSON.stringify(settings)); }catch(e){} }
+  $("#set-tarif").value = settings.tarif;
+  $("#set-km").value = settings.km;
+  $("#set-tva").value = settings.tva;
+  $("#set-tarif").addEventListener("input",()=>{ settings.tarif=num($("#set-tarif")); saveSettings(); recompute(); });
+  $("#set-km").addEventListener("input",()=>{ settings.km=num($("#set-km")); saveSettings(); recompute(); });
+  $("#set-tva").addEventListener("input",()=>{ settings.tva=num($("#set-tva")); saveSettings(); recompute(); });
+
+  /* ---------- favoris matériel (désignation -> dernier prix utilisé) ---------- */
+  let favoris = {};
+  try{ favoris = JSON.parse(localStorage.getItem("devis-favoris")||"{}") || {}; }catch(e){}
+  function saveFavoris(){ try{ localStorage.setItem("devis-favoris", JSON.stringify(favoris)); }catch(e){} }
+  function refreshFavList(){
+    const names=Object.keys(favoris).sort((a,b)=>a.localeCompare(b,'fr')).slice(0,80);
+    $("#mat-favoris").innerHTML = names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join("");
+  }
+  refreshFavList();
+  $("#mat-desig").addEventListener("input",()=>{
+    const v=$("#mat-desig").value;
+    if(favoris[v]!==undefined && !$("#mat-prix").value) $("#mat-prix").value=favoris[v];
+  });
+
+  /* ---------- matériel lines ---------- */
+  let lines=[]; // {desig, prix, qte}
+  const elMatList=$("#mat-list");
+  function renderMat(){
+    if(!lines.length){ elMatList.innerHTML=`<p class="mat-empty">Aucune ligne de matériel.</p>`; recompute(); return; }
+    elMatList.innerHTML = lines.map((l,i)=>`
+      <div class="mat-item">
+        <span class="desig">${escapeHtml(l.desig)}</span>
+        <span class="qtyprix">${l.qte} × ${fmtCHF(l.prix)}</span>
+        <span class="total">${fmtCHF(l.qte*l.prix)}</span>
+        <button class="rm" data-rm="${i}" aria-label="Retirer">×</button>
+      </div>`).join("");
+    recompute();
+  }
+  function escapeHtml(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+  elMatList.addEventListener("click",e=>{
+    const b=e.target.closest("[data-rm]"); if(!b) return;
+    lines.splice(+b.dataset.rm,1); renderMat();
+  });
+  $("#mat-add").addEventListener("click",()=>{
+    const desig=$("#mat-desig").value.trim();
+    const prix=num($("#mat-prix"));
+    const qte=Math.max(1, num($("#mat-qte"))||1);
+    if(!desig){ toast("Indique une désignation."); return; }
+    lines.push({desig,prix,qte});
+    favoris[desig]=prix; saveFavoris(); refreshFavList();
+    $("#mat-desig").value=""; $("#mat-prix").value=""; $("#mat-qte").value="1";
+    $("#mat-desig").focus();
+    renderMat();
+  });
+
+  /* ---------- totals ---------- */
+  function moTotal(){ return num($("#heures"))*settings.tarif + num($("#km"))*settings.km; }
+  function matTotal(){ return lines.reduce((s,l)=>s+l.qte*l.prix,0); }
+  function recompute(){
+    const mo=moTotal(), mat=matTotal(), ht=mo+mat, tva=ht*settings.tva/100, ttc=ht+tva;
+    $("#mo-total").textContent=fmtCHF(mo);
+    $("#t-ht").textContent=fmtCHF(ht);
+    $("#t-tva-label").textContent=`TVA ${settings.tva}%`;
+    $("#t-tva").textContent=fmtCHF(tva);
+    $("#t-ttc").textContent=fmtCHF(ttc);
+  }
+  $("#heures").addEventListener("input",recompute);
+  $("#km").addEventListener("input",recompute);
+
+  /* ---------- reset ---------- */
+  $("#reset").addEventListener("click",()=>{
+    $("#client").value=""; $("#heures").value=""; $("#km").value="";
+    lines=[]; renderMat();
+    toast("Nouveau devis");
+  });
+
+  /* ---------- PDF generation (no external library) ---------- */
+  const strBytes = s => { const a=new Uint8Array(s.length); for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i)&0xff; return a; };
+  function encWinAnsi(s){
+    const map={'’':0x92,'‘':0x91,'“':0x93,'”':0x94,'–':0x96,'—':0x97,'…':0x85,'€':0x80,'•':0x95,'«':0xAB,'»':0xBB,'°':0xB0};
+    const out=[]; for(const ch of s){ let c=map[ch]!==undefined?map[ch]:ch.codePointAt(0); if(c>255)c=0x3F; out.push(c); } return out;
+  }
+  function contentBuf(){
+    const parts=[];
+    return {
+      raw:s=>parts.push(strBytes(s)),
+      text:s=>{ const b=encWinAnsi(s); const out=[0x28]; for(const c of b){ if(c===0x28||c===0x29||c===0x5C)out.push(0x5C); out.push(c);} out.push(0x29); parts.push(new Uint8Array(out)); },
+      done:()=>{ let L=0; parts.forEach(p=>L+=p.length); const u=new Uint8Array(L); let o=0; parts.forEach(p=>{u.set(p,o);o+=p.length;}); return u; }
+    };
+  }
+  function padRow(label,amount,width){
+    label=label||""; amount=amount||"";
+    if(label.length + amount.length + 1 > width){ label = label.slice(0, Math.max(0,width-amount.length-2))+"…"; }
+    const pad = Math.max(1, width - label.length - amount.length);
+    return label + " ".repeat(pad) + amount;
+  }
+  function fmtWhen(ts){ return new Date(ts).toLocaleDateString('fr-CH',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+
+  async function buildDevisPDF(){
+    const client=$("#client").value.trim();
+    const heures=num($("#heures")), km=num($("#km"));
+    const mo=moTotal(), mat=matTotal(), ht=mo+mat, tvaAmt=ht*settings.tva/100, ttc=ht+tvaAmt;
+    const W=80;
+
+    const rows=[]; // {kind:'h1'|'h2'|'line'|'gap'|'total', text/label/amount}
+    rows.push({kind:"line", text:fmtWhen(Date.now())});
+    rows.push({kind:"gap"});
+    if(heures>0) rows.push({kind:"row", label:`Main d'œuvre — ${heures} h × ${fmtCHF(settings.tarif)}/h`, amount:fmtCHF(heures*settings.tarif)});
+    if(km>0) rows.push({kind:"row", label:`Déplacement — ${km} km × ${fmtCHF(settings.km)}/km`, amount:fmtCHF(km*settings.km)});
+    if(lines.length){
+      if(heures>0||km>0) rows.push({kind:"gap"});
+      for(const l of lines) rows.push({kind:"row", label:`${l.desig} — ${l.qte} × ${fmtCHF(l.prix)}`, amount:fmtCHF(l.qte*l.prix)});
+    }
+    rows.push({kind:"rule"});
+    rows.push({kind:"row", label:"Sous-total HT", amount:fmtCHF(ht)});
+    rows.push({kind:"row", label:`TVA ${settings.tva}%`, amount:fmtCHF(tvaAmt)});
+    rows.push({kind:"rule"});
+    rows.push({kind:"total", label:"Total TTC", amount:fmtCHF(ttc)});
+
+    const PW=595.28, PH=841.89, M=48;
+    const chunks=[]; let len=0;
+    const put=u8=>{chunks.push(u8); len+=u8.length;};
+    const putS=s=>put(strBytes(s));
+    const off=[]; const beginObj=n=>{off[n]=len; putS(n+" 0 obj\n");}; const endObj=()=>putS("\nendobj\n");
+    let obj=0; const N=()=>++obj;
+    const catalog=N(), pagesObj=N(), fHelv=N(), fHelvB=N(), fCour=N();
+
+    const perPage=48;
+    const chunksOfRows=[]; for(let i=0;i<Math.max(1,Math.ceil(rows.length/perPage));i++) chunksOfRows.push(rows.slice(i*perPage,(i+1)*perPage));
+    const pages=chunksOfRows.map((rs,i)=>({pageNum:N(),contentNum:N(),rows:rs,first:i===0}));
+
+    putS("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+    beginObj(catalog); putS(`<< /Type /Catalog /Pages ${pagesObj} 0 R >>`); endObj();
+    beginObj(pagesObj); putS(`<< /Type /Pages /Kids [${pages.map(p=>p.pageNum+" 0 R").join(" ")}] /Count ${pages.length} >>`); endObj();
+    beginObj(fHelv); putS("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"); endObj();
+    beginObj(fHelvB); putS("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"); endObj();
+    beginObj(fCour); putS("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>"); endObj();
+    const resObj=N();
+    beginObj(resObj); putS(`<< /Font << /F1 ${fHelv} 0 R /F2 ${fHelvB} 0 R /F3 ${fCour} 0 R >> >>`); endObj();
+
+    for(const pg of pages){
+      const c=contentBuf();
+      c.raw("BT\n");
+      let y=PH-M;
+      if(pg.first){
+        c.raw(`/F2 18 Tf\n1 0 0 1 ${M} ${y.toFixed(2)} Tm\n`); c.text("Devis — Tech-Elec"); c.raw(" Tj\n");
+        c.raw("/F1 11 Tf\n0 -20 Td\n"); c.text(client?client:"Sur chantier"); c.raw(" Tj\n");
+        c.raw("/F3 10 Tf\n0 -22 Td\n13.5 TL\n");
+      } else {
+        c.raw(`/F3 10 Tf\n1 0 0 1 ${M} ${(PH-M).toFixed(2)} Tm\n13.5 TL\n`);
+      }
+      for(const r of pg.rows){
+        if(r.kind==="gap"){ c.raw("T*\n"); continue; }
+        if(r.kind==="rule"){ c.text("-".repeat(W)); c.raw(" Tj\nT*\n"); continue; }
+        if(r.kind==="line"){ c.raw("/F1 10 Tf\n"); c.text(r.text); c.raw(" Tj\n/F3 10 Tf\nT*\n"); continue; }
+        if(r.kind==="total"){ c.raw("/F2 13 Tf\n"); c.text(padRow(r.label,r.amount,W-4)); c.raw(" Tj\n/F3 10 Tf\nT*\n"); continue; }
+        c.text(padRow(r.label,r.amount,W)); c.raw(" Tj\nT*\n");
+      }
+      c.raw("ET");
+      const body=c.done();
+      beginObj(pg.pageNum); putS(`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources ${resObj} 0 R /Contents ${pg.contentNum} 0 R >>`); endObj();
+      beginObj(pg.contentNum); putS(`<< /Length ${body.length} >>\nstream\n`); put(body); putS("\nendstream"); endObj();
+    }
+
+    const xref=len;
+    putS(`xref\n0 ${obj+1}\n0000000000 65535 f \n`);
+    for(let i=1;i<=obj;i++) putS(String(off[i]||0).padStart(10,"0")+" 00000 n \n");
+    putS(`trailer\n<< /Size ${obj+1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF`);
+
+    const bytes=new Uint8Array(len); let o=0; chunks.forEach(c=>{bytes.set(c,o);o+=c.length;});
+    const d=new Date(), p=x=>String(x).padStart(2,"0");
+    const base=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_devis${client?("_"+client.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,24)):""}`;
+    return new File([bytes], base+".pdf", {type:"application/pdf"});
+  }
+
+  const urls=new Set();
+  function objURL(blob){const u=URL.createObjectURL(blob); urls.add(u); return u;}
+
+  function showPdfViewer(pdf){
+    const url=objURL(pdf);
+    const ov=document.createElement("div"); ov.className="pdfview";
+    ov.innerHTML=
+      `<div class="pv-bar"><div class="pv-title">Devis PDF prêt</div><button class="pv-close" aria-label="Fermer">×</button></div>`
+      + `<div class="pv-hint">Icône Partager de Safari (⬆️) pour enregistrer ou envoyer.</div>`
+      + `<iframe class="pv-frame" src="${url}" title="Aperçu PDF"></iframe>`;
+    document.body.appendChild(ov);
+    ov.querySelector(".pv-close").addEventListener("click",()=>ov.remove());
+    toast("PDF prêt ✓");
+  }
+
+  $("#pdf").addEventListener("click",async()=>{
+    if(moTotal()+matTotal()<=0){ toast("Ajoute des heures, km ou du matériel."); return; }
+    toast("Génération du PDF…");
+    let pdf;
+    try{ pdf=await buildDevisPDF(); }
+    catch(e){ console.warn("pdf failed",e); toast("Échec de génération du PDF."); return; }
+    const client=$("#client").value.trim();
+    const meta={ title: client?("Devis — "+client):"Devis Tech-Elec" };
+    if(navigator.canShare && navigator.canShare({files:[pdf]})){
+      try{ await navigator.share(Object.assign({},meta,{files:[pdf]})); return; }
+      catch(e){ if(e && e.name==="AbortError") return; console.warn("share failed",e); }
+    }
+    showPdfViewer(pdf);
+  });
+
+  /* ---------- theme ---------- */
+  const root=document.documentElement;
+  try{ const saved=localStorage.getItem("cn-theme"); if(saved) root.setAttribute("data-theme",saved); }catch(e){}
+  $("#theme").addEventListener("click",()=>{
+    const cur=root.getAttribute("data-theme");
+    const sysDark=window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches;
+    const next = cur ? (cur==="dark"?"light":"dark") : (sysDark?"light":"dark");
+    root.setAttribute("data-theme",next);
+    try{ localStorage.setItem("cn-theme",next); }catch(e){}
+  });
+
+  renderMat();
+  recompute();
+})();
+</script>
+</body>
+</html>
