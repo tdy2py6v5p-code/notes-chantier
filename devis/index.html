@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Devis">
 <meta name="description" content="Devis rapide Tech-Elec — main d'œuvre, déplacement, matériel, export PDF.">
+<meta name="app-version" content="2026.08.15.4">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="../icon-180.png">
 <link rel="icon" type="image/png" href="../icon-180.png">
@@ -348,6 +349,25 @@
 <script>
 "use strict";
 (function(){
+  /* ---------- auto-update : force un rechargement si une nouvelle version est en ligne
+     (contourne le cache agressif de l'app ajoutée à l'écran d'accueil iOS) ---------- */
+  (async function checkForUpdate(){
+    try{
+      const localV = document.querySelector('meta[name="app-version"]').content;
+      const res = await fetch(location.pathname + "?t=" + Date.now(), {cache:"no-store"});
+      const html = await res.text();
+      const m = html.match(/name="app-version" content="([^"]+)"/);
+      const remoteV = m && m[1];
+      if(remoteV && remoteV !== localV){
+        const flag = "devis-reloaded-" + remoteV;
+        if(!sessionStorage.getItem(flag)){
+          sessionStorage.setItem(flag, "1");
+          location.reload();
+        }
+      }
+    }catch(e){}
+  })();
+
   const $ = s => document.querySelector(s);
   let toastTimer;
   function toast(msg){
