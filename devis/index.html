@@ -280,6 +280,7 @@
     </div>
     <button class="mat-add-btn" id="mat-add" style="width:100%;margin-top:10px" aria-label="Ajouter la ligne">+ Ajouter la ligne</button>
     <a class="em-link" href="https://www.elektro-material.ch/" target="_blank" rel="noopener">↗ Ouvrir Elektro-Material pour chercher un prix</a>
+    <br><button class="em-link" id="seed-favoris" style="background:none;border:none;font:inherit;cursor:pointer;padding:0;margin-top:8px">+ Charger les désignations courantes (sans prix)</button>
     <div class="mat-list" id="mat-list"></div>
   </section>
 
@@ -330,7 +331,7 @@
   $("#set-km").addEventListener("input",()=>{ settings.km=num($("#set-km")); saveSettings(); recompute(); });
   $("#set-tva").addEventListener("input",()=>{ settings.tva=num($("#set-tva")); saveSettings(); recompute(); });
 
-  /* ---------- favoris matériel (désignation -> dernier prix utilisé) ---------- */
+  /* ---------- favoris matériel (désignation -> dernier prix utilisé, ou null si pas encore de prix) ---------- */
   let favoris = {};
   try{ favoris = JSON.parse(localStorage.getItem("devis-favoris")||"{}") || {}; }catch(e){}
   function saveFavoris(){ try{ localStorage.setItem("devis-favoris", JSON.stringify(favoris)); }catch(e){} }
@@ -341,7 +342,29 @@
   refreshFavList();
   $("#mat-desig").addEventListener("input",()=>{
     const v=$("#mat-desig").value;
-    if(favoris[v]!==undefined && !$("#mat-prix").value) $("#mat-prix").value=favoris[v];
+    if(favoris[v]!=null && !$("#mat-prix").value) $("#mat-prix").value=favoris[v];
+  });
+
+  const SEED_ITEMS=[
+    "Prise T13 encastrée","Prise T13 saillie","Prise T23 triphasée encastrée",
+    "Interrupteur simple encastré","Interrupteur va-et-vient encastré","Bouton poussoir encastré",
+    "Variateur (dimmer) encastré","Détecteur de mouvement encastré",
+    "Disjoncteur automatique 1P+N 10A","Disjoncteur automatique 1P+N 16A","Disjoncteur automatique 1P+N 20A",
+    "Disjoncteur différentiel (FI) 30mA",
+    "Câble 3G1.5 mm² (T)","Câble 3G2.5 mm² (T)","Câble 5G2.5 mm² (T)",
+    "Tube annelé Ø16 (icta)","Tube annelé Ø20 (icta)",
+    "Boîte de dérivation encastrée","Boîte d'encastrement simple",
+    "Plaque de recouvrement 1 poste","Plaque de recouvrement 2 postes",
+    "Prise RJ45 encastrée","Prise TV/antenne encastrée",
+    "Spot LED encastré","Réglette LED étanche",
+    "Tableau électrique modulaire","Sonnette / bouton de sonnette",
+    "Coffret de chantier","Goulotte / chemin de câbles"
+  ];
+  $("#seed-favoris").addEventListener("click",()=>{
+    let added=0;
+    for(const name of SEED_ITEMS){ if(!(name in favoris)){ favoris[name]=null; added++; } }
+    saveFavoris(); refreshFavList();
+    toast(added?`${added} désignation${added>1?"s":""} ajoutée${added>1?"s":""}`:"Déjà toutes chargées");
   });
 
   /* ---------- matériel lines ---------- */
