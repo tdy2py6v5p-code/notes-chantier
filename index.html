@@ -143,6 +143,7 @@
     padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);
   }
   .actions-inner{max-width:640px; margin:0 auto; display:flex; gap:10px}
+  .actions-inner[hidden]{display:none}
   .btn{
     appearance:none; cursor:pointer; font:inherit; font-weight:700; font-size:16px;
     border-radius:14px; padding:15px 16px; border:1px solid var(--line);
@@ -157,10 +158,16 @@
   .btn:active{transform:translateY(1px)}
 
   /* Saved list */
-  .list-head{display:flex; align-items:baseline; gap:8px; margin:26px 2px 2px}
+  .list-head{display:flex; align-items:center; gap:8px; margin:26px 2px 2px}
   .list-head h2{font-size:15px; font-weight:750; margin:0}
   .list-head .count{font-family:var(--font-mono); font-size:12px; color:var(--muted)}
+  .group-head{display:flex; align-items:baseline; gap:8px; margin:22px 2px 2px; padding-bottom:5px; border-bottom:1px solid var(--line)}
+  .group-name{font-family:var(--font-mono); font-size:12.5px; font-weight:700; color:var(--accent-deep)}
+  .group-count{font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-left:auto}
   .note{padding:14px 14px 12px}
+  .note.selected{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-weak), var(--shadow)}
+  .note.selectable{cursor:pointer}
+  .sel-check{width:19px; height:19px; margin:0 1px 0 0; accent-color:var(--accent); flex:0 0 auto}
   .note .top{display:flex; align-items:baseline; gap:8px; margin-bottom:6px}
   .note .chantier{font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--accent-deep)}
   .note .when{font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-left:auto; white-space:nowrap}
@@ -282,15 +289,22 @@
   <div class="list-head">
     <h2>Enregistrées</h2>
     <span class="count" id="list-count"></span>
+    <span class="grow"></span>
+    <button class="mini-btn" id="select-toggle" hidden>Sélectionner</button>
   </div>
   <div id="list"></div>
 </div>
 
 <!-- Action bar -->
 <div class="actions">
-  <div class="actions-inner">
+  <div class="actions-inner" id="actions-normal">
     <button class="btn" id="save" disabled>Enregistrer</button>
     <button class="btn primary" id="send" disabled><span>Envoyer le PDF</span></button>
+  </div>
+  <div class="actions-inner" id="actions-select" hidden>
+    <button class="btn" id="sel-cancel">Annuler</button>
+    <button class="btn" id="sel-delete" style="flex:1;color:var(--danger)" disabled>Supprimer</button>
+    <button class="btn primary" id="sel-send" disabled>Envoyer</button>
   </div>
 </div>
 
@@ -653,19 +667,44 @@
     resetCompose(); render();
   });
 
-  /* ---------- render saved list ---------- */
+  /* ---------- render saved list (grouped by chantier) ---------- */
   const elList=$("#list");
   let confirmId=null, confirmTimer=null;
+  let selectMode=false, selected=new Set(), selDeleteArmed=false, selDeleteTimer=null;
+
+  function setSelectMode(on){
+    selectMode=on; if(!on){ selected.clear(); selDeleteArmed=false; clearTimeout(selDeleteTimer); }
+    $("#select-toggle").textContent = on ? "Annuler" : "Sélectionner";
+    $("#actions-normal").hidden = on;
+    $("#actions-select").hidden = !on;
+    render();
+  }
+  function toggleSel(id){
+    if(selected.has(id)) selected.delete(id); else selected.add(id);
+    selDeleteArmed=false; clearTimeout(selDeleteTimer);
+    render();
+  }
+  function updateSelectBar(){
+    const n=selected.size;
+    $("#sel-delete").disabled = n===0;
+    $("#sel-send").disabled = n===0;
+    $("#sel-delete").textContent = selDeleteArmed ? `Confirmer ? (${n})` : (n?`Supprimer (${n})`:"Supprimer");
+    $("#sel-send").textContent = n?`Envoyer (${n})`:"Envoyer";
+  }
+
   async function render(){
     clearURLs();
-    const notes=await allNotes();
+    const notes=await allNotes(); // already sorted: most recent first
     // datalist of chantiers
     const names=[...new Set(notes.map(n=>n.chantier).filter(Boolean))].slice(0,30);
     $("#chantiers").innerHTML=names.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join("");
     $("#list-count").textContent=notes.length?`${notes.length}`:"";
     $("#hdr-sub").textContent = notes.length ? `${notes.length} note${notes.length>1?"s":""}` : "Tech-Elec";
+    $("#select-toggle").hidden = !notes.length;
 
     if(!notes.length){
+      selectMode=false; selected.clear();
+      $("#actions-normal").hidden=false; $("#actions-select").hidden=true; $("#select-toggle").textContent="Sélectionner";
       elList.innerHTML=`<div class="empty"><span class="g plug"><svg viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 <path d="M24 6v16M40 6v16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
 <path d="M18 22h28v8a14 14 0 0 1-14 14 14 14 0 0 1-14-14v-8z" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
@@ -673,37 +712,61 @@
 </svg></span>Aucune note pour l'instant.<br>Saisissez la première ci-dessus.</div>`;
       return;
     }
-    elList.innerHTML="";
+
+    // group by chantier, in order of first (= most recent) appearance
+    const groups=new Map();
     for(const n of notes){
-      const card=document.createElement("div"); card.className="card note";
-      const mini=(n.media||[]).map(m=>{
-        const src=objURL(m.blob);
-        return isVideo(m.type)
-          ? `<div class="m"><video src="${src}" muted playsinline preload="metadata"></video><div class="pl">▶</div></div>`
-          : `<div class="m"><img src="${src}" alt=""></div>`;
-      }).join("");
-      const confirming = confirmId===n.id;
-      card.innerHTML=`
-        <div class="top">
-          <span class="chantier">${n.chantier?escapeHtml(n.chantier):"— sans chantier —"}</span>
-          <span class="when">${fmtWhen(n.createdAt)}</span>
-        </div>
-        <p class="body${n.text?"":" empty"}">${n.text?escapeHtml(n.text):"(pas de texte)"}</p>
-        ${mini?`<div class="mini">${mini}</div>`:""}
-        <div class="row">
-          <span class="pill ${n.sent?"sent":""}">${n.sent?"✓ envoyé":(n.media&&n.media.length?`${n.media.length} média${n.media.length>1?"s":""}`:"brouillon")}</span>
-          <span class="grow"></span>
-          <button class="mini-btn" data-edit="${n.id}">Modifier</button>
-          <button class="mini-btn danger" data-del="${n.id}">${confirming?"Confirmer ?":"Suppr."}</button>
-          ${(n.media&&n.media.length)?`<button class="mini-btn" data-media="${n.id}">Médias</button>`:""}
-          <button class="mini-btn send" data-pdf="${n.id}">PDF</button>
-        </div>`;
-      elList.appendChild(card);
+      const key = n.chantier || " ";
+      if(!groups.has(key)) groups.set(key,{label:n.chantier||"Sans chantier", items:[]});
+      groups.get(key).items.push(n);
     }
+
+    elList.innerHTML="";
+    for(const [,g] of groups){
+      const head=document.createElement("div"); head.className="group-head";
+      head.innerHTML=`<span class="group-name">${escapeHtml(g.label)}</span><span class="group-count">${g.items.length}</span>`;
+      elList.appendChild(head);
+      for(const n of g.items){
+        const card=document.createElement("div");
+        card.className="card note"+(selectMode?" selectable":"")+(selected.has(n.id)?" selected":"");
+        card.dataset.note=n.id;
+        const mini=(n.media||[]).map(m=>{
+          const src=objURL(m.blob);
+          return isVideo(m.type)
+            ? `<div class="m"><video src="${src}" muted playsinline preload="metadata"></video><div class="pl">▶</div></div>`
+            : `<div class="m"><img src="${src}" alt=""></div>`;
+        }).join("");
+        const confirming = confirmId===n.id;
+        card.innerHTML=`
+          <div class="top">
+            ${selectMode?`<input type="checkbox" class="sel-check" tabindex="-1" ${selected.has(n.id)?"checked":""}>`:""}
+            <span class="chantier">${n.chantier?escapeHtml(n.chantier):"— sans chantier —"}</span>
+            <span class="when">${fmtWhen(n.createdAt)}</span>
+          </div>
+          <p class="body${n.text?"":" empty"}">${n.text?escapeHtml(n.text):"(pas de texte)"}</p>
+          ${mini?`<div class="mini">${mini}</div>`:""}
+          ${selectMode?"":`
+          <div class="row">
+            <span class="pill ${n.sent?"sent":""}">${n.sent?"✓ envoyé":(n.media&&n.media.length?`${n.media.length} média${n.media.length>1?"s":""}`:"brouillon")}</span>
+            <span class="grow"></span>
+            <button class="mini-btn" data-edit="${n.id}">Modifier</button>
+            <button class="mini-btn danger" data-del="${n.id}">${confirming?"Confirmer ?":"Suppr."}</button>
+            ${(n.media&&n.media.length)?`<button class="mini-btn" data-media="${n.id}">Médias</button>`:""}
+            <button class="mini-btn send" data-pdf="${n.id}">PDF</button>
+          </div>`}`;
+        elList.appendChild(card);
+      }
+    }
+    if(selectMode) updateSelectBar();
   }
   function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
   elList.addEventListener("click",async e=>{
+    if(selectMode){
+      const card=e.target.closest(".note[data-note]");
+      if(card) toggleSel(card.dataset.note);
+      return;
+    }
     const pdf=e.target.closest("[data-pdf]"); const med=e.target.closest("[data-media]"); const d=e.target.closest("[data-del]"); const ed=e.target.closest("[data-edit]");
     if(pdf){ const notes=await allNotes(); const n=notes.find(x=>x.id===pdf.dataset.pdf); if(n) sendPDF(n); return; }
     if(med){ const notes=await allNotes(); const n=notes.find(x=>x.id===med.dataset.media); if(n) sendMedia(n); return; }
@@ -713,6 +776,40 @@
       if(confirmId===id){ clearTimeout(confirmTimer); confirmId=null; await delNote(id); render(); toast("Supprimé"); }
       else{ confirmId=id; render(); clearTimeout(confirmTimer); confirmTimer=setTimeout(()=>{confirmId=null; render();},3000); }
     }
+  });
+
+  $("#select-toggle").addEventListener("click",()=>setSelectMode(!selectMode));
+  $("#sel-cancel").addEventListener("click",()=>setSelectMode(false));
+  $("#sel-delete").addEventListener("click",async()=>{
+    if(!selected.size) return;
+    if(!selDeleteArmed){
+      selDeleteArmed=true; updateSelectBar();
+      clearTimeout(selDeleteTimer);
+      selDeleteTimer=setTimeout(()=>{ selDeleteArmed=false; updateSelectBar(); },3000);
+      return;
+    }
+    clearTimeout(selDeleteTimer); selDeleteArmed=false;
+    const ids=[...selected];
+    for(const id of ids) await delNote(id);
+    toast(`${ids.length} note${ids.length>1?"s":""} supprimée${ids.length>1?"s":""}`);
+    setSelectMode(false);
+  });
+  $("#sel-send").addEventListener("click",async()=>{
+    const ids=[...selected]; if(!ids.length) return;
+    toast("Génération des PDF…");
+    const notes=await allNotes();
+    const chosen=notes.filter(n=>ids.includes(n.id));
+    const files=[];
+    for(const n of chosen){ try{ files.push(await buildNotePDF(n)); }catch(e){ console.warn("pdf failed",n.id,e); } }
+    if(!files.length){ toast("Échec de génération."); return; }
+    if(navigator.canShare && navigator.canShare({files})){
+      try{
+        await navigator.share({title:`Notes de chantier (${files.length})`, files});
+        for(const n of chosen){ n.sent=true; n.sentAt=Date.now(); await putNote(n); }
+        toast("Envoyé ✓"); setSelectMode(false); return;
+      }catch(e){ if(e && e.name==="AbortError") return; console.warn("bulk share failed",e); }
+    }
+    toast("Partage groupé indisponible ici — envoyez les notes une par une (bouton PDF).");
   });
 
   /* ---------- theme ---------- */
