@@ -82,6 +82,7 @@
     display:grid; place-items:center; cursor:pointer;
   }
   .icon-btn:active{transform:scale(.94)}
+  .icon-btn.listening{background:var(--danger); color:#fff; border-color:transparent}
 
   /* Cards */
   .card{
@@ -243,7 +244,11 @@
 
   <!-- Compose -->
   <section class="card" aria-label="Nouvelle note">
-    <p class="eyebrow">Nouvelle note</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <p class="eyebrow" id="compose-eyebrow" style="margin:0">Nouvelle note</p>
+      <span class="grow"></span>
+      <button class="mini-btn" id="edit-cancel" hidden>Annuler</button>
+    </div>
 
     <label class="field">
       <span>Chantier</span>
@@ -252,7 +257,9 @@
     </label>
 
     <label class="field" style="margin-bottom:8px">
-      <span>Note</span>
+      <span style="display:flex;align-items:center;justify-content:space-between">Note
+        <button type="button" class="icon-btn" id="mic" title="Dictée vocale" aria-label="Dictée vocale" style="display:none;width:28px;height:28px;font-size:13px">🎙️</button>
+      </span>
       <textarea id="text" placeholder="Ce qui s'est dit, à faire, à vérifier…"></textarea>
     </label>
 
@@ -269,7 +276,6 @@
     </div>
 
     <div class="thumbs" id="thumbs" hidden></div>
-    <p class="hint" id="compose-hint"><b>Envoyer le PDF</b> = un seul fichier (texte + photos). Si le menu de partage iOS s'ouvre → <b>« Enregistrer dans Fichiers »</b>. Sinon le PDF s'affiche en plein écran : utilisez <b>l'icône Partager de Safari</b> (⬆️) ou <b>Imprimer</b>. Les <b>photos/vidéos brutes</b> à part : bouton <b>Médias</b> sur la note enregistrée.</p>
   </section>
 
   <!-- Saved notes -->
@@ -381,16 +387,65 @@
   elChantier.addEventListener("input",refreshButtons);
   elText.addEventListener("input",refreshButtons);
 
+  let editingId=null, editingCreatedAt=null;
   function currentNote(){
+    const media=draft.media.map(m=>({name:m.name,type:m.type,size:m.size,blob:m.blob}));
+    if(editingId){
+      return { id:editingId, chantier:elChantier.value.trim(), text:elText.value.trim(),
+        createdAt:editingCreatedAt, sent:false, sentAt:null, media };
+    }
     return { id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
       chantier:elChantier.value.trim(), text:elText.value.trim(),
-      createdAt:Date.now(), sent:false, sentAt:null,
-      media:draft.media.map(m=>({name:m.name,type:m.type,size:m.size,blob:m.blob})) };
+      createdAt:Date.now(), sent:false, sentAt:null, media };
   }
   function resetCompose(){
     elChantier.value=""; elText.value=""; draft.media=[];
+    editingId=null; editingCreatedAt=null;
+    $("#compose-eyebrow").textContent="Nouvelle note";
+    $("#edit-cancel").hidden=true;
+    $("#save").textContent="Enregistrer";
     renderThumbs(); refreshButtons();
   }
+  function startEdit(n){
+    editingId=n.id; editingCreatedAt=n.createdAt;
+    elChantier.value=n.chantier||""; elText.value=n.text||"";
+    draft.media=(n.media||[]).map(m=>({name:m.name,type:m.type,size:m.size,blob:m.blob}));
+    renderThumbs(); refreshButtons();
+    $("#compose-eyebrow").textContent="Modifier la note";
+    $("#edit-cancel").hidden=false;
+    $("#save").textContent="Mettre à jour";
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  $("#edit-cancel").addEventListener("click",resetCompose);
+
+  /* ---------- voice dictation (not supported by iOS Safari — use the
+     keyboard's own mic button there; this is a bonus for browsers that do
+     support it, e.g. Chrome/Android) ---------- */
+  (function(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    const micBtn=$("#mic");
+    if(!SR) return; // stays hidden
+    micBtn.style.display="grid";
+    let rec=null, listening=false, base="";
+    function start(){
+      rec=new SR(); rec.lang="fr-FR"; rec.continuous=true; rec.interimResults=false;
+      base = elText.value.trim() ? elText.value.trim()+" " : "";
+      rec.onresult=e=>{
+        let added="";
+        for(let i=e.resultIndex;i<e.results.length;i++) if(e.results[i].isFinal) added+=e.results[i][0].transcript;
+        if(added){ base=(base+added).trim()+" "; elText.value=base; refreshButtons(); }
+      };
+      rec.onerror=e=>{ if(e.error!=="no-speech") console.warn("dictation error",e.error); };
+      rec.onend=()=>{ if(listening){ try{ rec.start(); }catch(e){} } };
+      try{ rec.start(); listening=true; micBtn.classList.add("listening"); }
+      catch(e){ toast("Dictée indisponible."); }
+    }
+    function stop(){
+      listening=false; micBtn.classList.remove("listening");
+      if(rec){ try{ rec.stop(); }catch(e){} }
+    }
+    micBtn.addEventListener("click",()=>{ listening?stop():start(); });
+  })();
 
   /* ---------- share ---------- */
   function noteText(n){
@@ -537,7 +592,7 @@
       + `<div class="pv-title">PDF prêt — ${n.chantier?escapeHtml(n.chantier):"note"}</div>`
       + `<button class="pv-close" aria-label="Fermer">×</button>`
       + `</div>`
-      + `<div class="pv-hint">Touchez <b>l'icône Partager</b> de Safari (⬆️) puis <b>« Enregistrer dans Fichiers »</b> ou <b>« Envoyer »</b>. Ou <b>Imprimer</b> pour un PDF.</div>`
+      + `<div class="pv-hint">Icône Partager de Safari (⬆️) pour enregistrer ou envoyer.</div>`
       + `<iframe class="pv-frame" src="${url}" title="Aperçu PDF"></iframe>`;
     document.body.appendChild(ov);
     ov.querySelector(".pv-close").addEventListener("click",()=>{ ov.remove(); });
@@ -587,7 +642,9 @@
      share, and only clear/refresh the compose form AFTERWARDS. No full list
      re-render happens before the share call. */
   $("#save").addEventListener("click",async()=>{
-    const n=currentNote(); await putNote(n); resetCompose(); render(); toast("Enregistré");
+    const wasEditing=!!editingId;
+    const n=currentNote(); await putNote(n); resetCompose(); render();
+    toast(wasEditing?"Note mise à jour":"Enregistré");
   });
   $("#send").addEventListener("click",async()=>{
     const n=currentNote();
@@ -636,6 +693,7 @@
         <div class="row">
           <span class="pill ${n.sent?"sent":""}">${n.sent?"✓ envoyé":(n.media&&n.media.length?`${n.media.length} média${n.media.length>1?"s":""}`:"brouillon")}</span>
           <span class="grow"></span>
+          <button class="mini-btn" data-edit="${n.id}">Modifier</button>
           <button class="mini-btn danger" data-del="${n.id}">${confirming?"Confirmer ?":"Suppr."}</button>
           ${(n.media&&n.media.length)?`<button class="mini-btn" data-media="${n.id}">Médias</button>`:""}
           <button class="mini-btn send" data-pdf="${n.id}">PDF</button>
@@ -646,9 +704,10 @@
   function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
   elList.addEventListener("click",async e=>{
-    const pdf=e.target.closest("[data-pdf]"); const med=e.target.closest("[data-media]"); const d=e.target.closest("[data-del]");
+    const pdf=e.target.closest("[data-pdf]"); const med=e.target.closest("[data-media]"); const d=e.target.closest("[data-del]"); const ed=e.target.closest("[data-edit]");
     if(pdf){ const notes=await allNotes(); const n=notes.find(x=>x.id===pdf.dataset.pdf); if(n) sendPDF(n); return; }
     if(med){ const notes=await allNotes(); const n=notes.find(x=>x.id===med.dataset.media); if(n) sendMedia(n); return; }
+    if(ed){ const notes=await allNotes(); const n=notes.find(x=>x.id===ed.dataset.edit); if(n) startEdit(n); return; }
     if(d){
       const id=d.dataset.del;
       if(confirmId===id){ clearTimeout(confirmTimer); confirmId=null; await delNote(id); render(); toast("Supprimé"); }
