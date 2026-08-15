@@ -118,6 +118,22 @@
   .line-calc b{color:var(--ink); font-size:14px}
 
   /* materiel */
+  .mat-desig-field{position:relative}
+  .mat-suggest{
+    position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:40;
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    box-shadow:var(--shadow); max-height:240px; overflow-y:auto;
+    display:none;
+  }
+  .mat-suggest.show{display:block}
+  .mat-suggest button{
+    display:block; width:100%; text-align:left; appearance:none; border:none; background:none;
+    font:inherit; color:var(--ink); padding:10px 13px; cursor:pointer; font-size:13.5px;
+    border-bottom:1px solid var(--line);
+  }
+  .mat-suggest button:last-child{border-bottom:none}
+  .mat-suggest button:active, .mat-suggest button:hover{background:var(--surface-2)}
+  .mat-suggest .price{float:right; font-family:var(--font-mono); color:var(--muted); font-size:12px; margin-left:8px}
   .mat-add{display:grid; grid-template-columns:1fr 84px 60px; gap:8px; align-items:end}
   .mat-add label.field{margin-bottom:0}
   .mat-add-btn{
@@ -264,10 +280,10 @@
   <section class="card" aria-label="Matériel">
     <p class="eyebrow">Matériel</p>
     <div class="mat-add">
-      <label class="field">
+      <label class="field mat-desig-field">
         <span>Désignation</span>
-        <input type="text" id="mat-desig" list="mat-favoris" placeholder="ex. Prise T13 encastrée" autocomplete="off">
-        <datalist id="mat-favoris"></datalist>
+        <input type="text" id="mat-desig" placeholder="ex. Prise T13 encastrée" autocomplete="off">
+        <div class="mat-suggest" id="mat-suggest"></div>
       </label>
       <label class="field">
         <span>Prix</span>
@@ -335,14 +351,40 @@
   let favoris = {};
   try{ favoris = JSON.parse(localStorage.getItem("devis-favoris")||"{}") || {}; }catch(e){}
   function saveFavoris(){ try{ localStorage.setItem("devis-favoris", JSON.stringify(favoris)); }catch(e){} }
+  let favNames=[];
   function refreshFavList(){
-    const names=Object.keys(favoris).sort((a,b)=>a.localeCompare(b,'fr')).slice(0,80);
-    $("#mat-favoris").innerHTML = names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join("");
+    favNames=Object.keys(favoris).sort((a,b)=>a.localeCompare(b,'fr'));
   }
   refreshFavList();
-  $("#mat-desig").addEventListener("input",()=>{
-    const v=$("#mat-desig").value;
+
+  const elDesig=$("#mat-desig"), elSuggest=$("#mat-suggest");
+  function renderSuggest(){
+    const f=elDesig.value.trim().toLowerCase();
+    const matches=(f?favNames.filter(n=>n.toLowerCase().includes(f)):favNames).slice(0,20);
+    if(!matches.length){ elSuggest.classList.remove("show"); elSuggest.innerHTML=""; return; }
+    elSuggest.innerHTML=matches.map(n=>{
+      const p=favoris[n];
+      const price=p!=null?`<span class="price">${fmtCHF(p)}</span>`:"";
+      return `<button type="button" data-name="${n.replace(/"/g,'&quot;')}">${n}${price}</button>`;
+    }).join("");
+    elSuggest.classList.add("show");
+  }
+  elDesig.addEventListener("input",()=>{
+    const v=elDesig.value;
     if(favoris[v]!=null && !$("#mat-prix").value) $("#mat-prix").value=favoris[v];
+    renderSuggest();
+  });
+  elDesig.addEventListener("focus",renderSuggest);
+  elSuggest.addEventListener("mousedown",(e)=>{
+    const btn=e.target.closest("button[data-name]");
+    if(!btn) return;
+    e.preventDefault();
+    elDesig.value=btn.dataset.name;
+    if(favoris[btn.dataset.name]!=null) $("#mat-prix").value=favoris[btn.dataset.name];
+    elSuggest.classList.remove("show");
+  });
+  document.addEventListener("click",(e)=>{
+    if(!e.target.closest(".mat-desig-field")) elSuggest.classList.remove("show");
   });
 
   const SEED_ITEMS=[
