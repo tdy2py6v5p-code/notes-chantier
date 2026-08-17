@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chantier">
 <meta name="description" content="Notes de chantier Tech-Elec — texte + photos, export PDF, stockage local sur l'appareil.">
+<meta name="app-version" content="2026.08.17.1">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
@@ -235,9 +236,66 @@
   .pv-frame{flex:1; width:100%; border:0; background:var(--surface-2)}
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  html.pin-locked body{overflow:hidden}
+  .pin-gate{position:fixed; inset:0; z-index:99999; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px}
+  .pin-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:32px 28px; max-width:280px; width:100%; text-align:center}
+  .pin-mark{width:48px; height:48px; margin:0 auto 14px; border-radius:50%; background:var(--brand); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px}
+  .pin-card h1{font-size:17px; margin:0 0 4px; color:var(--ink)}
+  .pin-card p{font-size:13px; color:var(--muted); margin:0 0 18px}
+  .pin-input{width:100%; font-size:26px; letter-spacing:14px; text-align:center; padding:12px 0 12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font-family:var(--font-mono)}
+  .pin-input:focus{outline:none; border-color:var(--accent-deep)}
+  .pin-error{color:var(--danger); font-size:12.5px; margin-top:10px}
+  .pin-card.shake{animation:pin-shake .4s}
+  @keyframes pin-shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
 </style>
 </head>
 <body>
+<div id="pin-gate" class="pin-gate" role="dialog" aria-modal="true" aria-label="Accès protégé">
+  <div class="pin-card">
+    <div class="pin-mark">TE</div>
+    <h1>Accès protégé</h1>
+    <p>Entrez le code à 4 chiffres</p>
+    <input id="pin-input" class="pin-input" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off">
+    <div id="pin-error" class="pin-error" hidden>Code incorrect</div>
+  </div>
+</div>
+<script>
+(function(){
+  var LS_KEY="techelec-unlocked", HASH="e78f27ab3ef177a9926e6b90e572b9853ce6cf4d87512836e9ae85807ec9d7fe";
+  var gate=document.getElementById("pin-gate");
+  if(localStorage.getItem(LS_KEY)==="1"){ gate.remove(); }
+  else {
+    document.documentElement.classList.add("pin-locked");
+    var input=document.getElementById("pin-input"), err=document.getElementById("pin-error"), card=gate.querySelector(".pin-card");
+    function sha256Hex(str){
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function(buf){
+        return Array.prototype.map.call(new Uint8Array(buf), function(b){return b.toString(16).padStart(2,"0");}).join("");
+      });
+    }
+    function tryUnlock(){
+      var v=input.value.replace(/\D/g,"");
+      if(v.length!==4) return;
+      sha256Hex(v).then(function(h){
+        if(h===HASH){
+          localStorage.setItem(LS_KEY,"1");
+          document.documentElement.classList.remove("pin-locked");
+          gate.remove();
+        } else {
+          err.hidden=false; input.value=""; card.classList.add("shake");
+          setTimeout(function(){card.classList.remove("shake");},420);
+        }
+      });
+    }
+    input.addEventListener("input",function(){
+      input.value=input.value.replace(/\D/g,"").slice(0,4);
+      err.hidden=true;
+      if(input.value.length===4) tryUnlock();
+    });
+    input.focus();
+  }
+})();
+</script>
 <div class="wrap">
   <header>
     <div class="mark"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="45.4" cy="8.6" r="2.1" fill="#fff"/><circle cx="54.6" cy="8.6" r="2.0" fill="#fff"/><circle cx="31.6" cy="16.9" r="2.5" fill="#fff"/><circle cx="40.8" cy="16.9" r="2.5" fill="#fff"/><circle cx="50.0" cy="16.9" r="2.5" fill="#fff"/><circle cx="59.2" cy="16.9" r="2.3" fill="#fff"/><circle cx="68.4" cy="16.9" r="2.1" fill="#fff"/><circle cx="17.8" cy="25.2" r="2.6" fill="#fff"/><circle cx="27.0" cy="25.2" r="2.9" fill="#fff"/><circle cx="36.2" cy="25.2" r="3.0" fill="#fff"/><circle cx="45.4" cy="25.2" r="3.0" fill="#fff"/><circle cx="54.6" cy="25.2" r="2.8" fill="#fff"/><circle cx="63.8" cy="25.2" r="2.6" fill="#fff"/><circle cx="73.0" cy="25.2" r="2.3" fill="#fff"/><circle cx="82.2" cy="25.2" r="1.9" fill="#fff"/><circle cx="13.2" cy="33.4" r="2.8" fill="#fff"/><circle cx="22.4" cy="33.4" r="3.2" fill="#fff"/><circle cx="31.6" cy="33.4" r="3.4" fill="#fff"/><circle cx="40.8" cy="33.4" r="3.4" fill="#fff"/><circle cx="50.0" cy="33.4" r="3.3" fill="#fff"/><circle cx="59.2" cy="33.4" r="3.1" fill="#fff"/><circle cx="68.4" cy="33.4" r="2.8" fill="#fff"/><circle cx="77.6" cy="33.4" r="2.4" fill="#fff"/><circle cx="86.8" cy="33.4" r="2.0" fill="#fff"/><circle cx="17.8" cy="41.7" r="3.3" fill="#fff"/><circle cx="27.0" cy="41.7" r="3.7" fill="#fff"/><circle cx="36.2" cy="41.7" r="3.9" fill="#fff"/><circle cx="45.4" cy="41.7" r="3.9" fill="#fff"/><circle cx="54.6" cy="41.7" r="3.6" fill="#fff"/><circle cx="63.8" cy="41.7" r="3.3" fill="#fff"/><circle cx="73.0" cy="41.7" r="2.8" fill="#fff"/><circle cx="82.2" cy="41.7" r="2.4" fill="#fff"/><circle cx="13.2" cy="50.0" r="3.3" fill="#fff"/><circle cx="22.4" cy="50.0" r="3.8" fill="#fff"/><circle cx="31.6" cy="50.0" r="4.2" fill="#fff"/><circle cx="40.8" cy="50.0" r="4.4" fill="#fff"/><circle cx="50.0" cy="50.0" r="4.1" fill="#fff"/><circle cx="59.2" cy="50.0" r="3.7" fill="#fff"/><circle cx="68.4" cy="50.0" r="3.3" fill="#fff"/><circle cx="77.6" cy="50.0" r="2.8" fill="#fff"/><circle cx="86.8" cy="50.0" r="2.3" fill="#fff"/><circle cx="17.8" cy="58.3" r="3.7" fill="#fff"/><circle cx="27.0" cy="58.3" r="4.2" fill="#fff"/><circle cx="36.2" cy="58.3" r="4.7" fill="#fff"/><circle cx="45.4" cy="58.3" r="4.6" fill="#fff"/><circle cx="54.6" cy="58.3" r="4.1" fill="#fff"/><circle cx="63.8" cy="58.3" r="3.6" fill="#fff"/><circle cx="73.0" cy="58.3" r="3.1" fill="#fff"/><circle cx="82.2" cy="58.3" r="2.6" fill="#fff"/><circle cx="13.2" cy="66.6" r="3.4" fill="#fff"/><circle cx="22.4" cy="66.6" r="3.9" fill="#fff"/><circle cx="31.6" cy="66.6" r="4.3" fill="#fff"/><circle cx="40.8" cy="66.6" r="4.5" fill="#fff"/><circle cx="50.0" cy="66.6" r="4.2" fill="#fff"/><circle cx="59.2" cy="66.6" r="3.8" fill="#fff"/><circle cx="68.4" cy="66.6" r="3.3" fill="#fff"/><circle cx="77.6" cy="66.6" r="2.8" fill="#fff"/><circle cx="86.8" cy="66.6" r="2.3" fill="#fff"/><circle cx="17.8" cy="74.8" r="3.4" fill="#fff"/><circle cx="27.0" cy="74.8" r="3.8" fill="#fff"/><circle cx="36.2" cy="74.8" r="4.1" fill="#fff"/><circle cx="45.4" cy="74.8" r="4.0" fill="#fff"/><circle cx="54.6" cy="74.8" r="3.8" fill="#fff"/><circle cx="63.8" cy="74.8" r="3.4" fill="#fff"/><circle cx="73.0" cy="74.8" r="2.9" fill="#fff"/><circle cx="82.2" cy="74.8" r="2.5" fill="#fff"/><circle cx="31.6" cy="83.1" r="3.6" fill="#fff"/><circle cx="40.8" cy="83.1" r="3.6" fill="#fff"/><circle cx="50.0" cy="83.1" r="3.5" fill="#fff"/><circle cx="59.2" cy="83.1" r="3.3" fill="#fff"/><circle cx="68.4" cy="83.1" r="2.9" fill="#fff"/><circle cx="45.4" cy="91.4" r="3.2" fill="#fff"/><circle cx="54.6" cy="91.4" r="3.0" fill="#fff"/></svg></div>
@@ -313,6 +371,25 @@
 <script>
 "use strict";
 (function(){
+  /* ---------- auto-update : force un rechargement si une nouvelle version est en ligne
+     (contourne le cache agressif de l'app ajoutée à l'écran d'accueil iOS) ---------- */
+  (async function checkForUpdate(){
+    try{
+      const localV = document.querySelector('meta[name="app-version"]').content;
+      const res = await fetch(location.pathname + "?t=" + Date.now(), {cache:"no-store"});
+      const html = await res.text();
+      const m = html.match(/name="app-version" content="([^"]+)"/);
+      const remoteV = m && m[1];
+      if(remoteV && remoteV !== localV){
+        const flag = "notes-reloaded-" + remoteV;
+        if(!sessionStorage.getItem(flag)){
+          sessionStorage.setItem(flag, "1");
+          location.reload();
+        }
+      }
+    }catch(e){}
+  })();
+
   /* ---------- tiny helpers ---------- */
   const $ = s => document.querySelector(s);
   const fmtSize = b => b < 1024 ? b+" o" : b < 1048576 ? (b/1024).toFixed(0)+" Ko" : (b/1048576).toFixed(1)+" Mo";
