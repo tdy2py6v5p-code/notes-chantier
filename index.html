@@ -669,6 +669,9 @@
       return new File([m.blob], `${fileBase(n)}_${i+1}.${ext}`, {type:m.type});
     });
   }
+  function videoFiles(n){
+    return mediaFiles(n).filter(f=>isVideo(f.type));
+  }
 
   /* ---------- PDF viewer fallback ----------
      When the native share sheet isn't available (common for a local file /
@@ -698,11 +701,25 @@
     let pdf;
     try{ pdf=await buildNotePDF(n); }
     catch(e){ console.warn("pdf failed",e); toast("Échec de génération du PDF."); return; }
+    const vids=videoFiles(n);
     const meta={ title:n.chantier?("Note — "+n.chantier):"Note de chantier", text:noteText(n) };
+    // Share the PDF together with any raw videos in one sheet, so a single
+    // "Enregistrer dans Fichiers" saves everything (PDFs can't embed video).
+    if(vids.length && navigator.canShare && navigator.canShare({files:[pdf,...vids]})){
+      try{
+        await navigator.share(Object.assign({},meta,{files:[pdf,...vids]}));
+        await markSent(n.id);
+        return;
+      }catch(e){
+        if(e && e.name==="AbortError") return;
+        console.warn("share failed",e); // fall through to PDF-only attempt below
+      }
+    }
     if(navigator.canShare && navigator.canShare({files:[pdf]})){
       try{
         await navigator.share(Object.assign({},meta,{files:[pdf]}));
         await markSent(n.id);
+        if(vids.length) toast("PDF envoyé — vidéo(s) à envoyer séparément (bouton Médias).");
         return;
       }catch(e){
         if(e && e.name==="AbortError") return; // user opened the sheet then cancelled
@@ -877,7 +894,10 @@
     const notes=await allNotes();
     const chosen=notes.filter(n=>ids.includes(n.id));
     const files=[];
-    for(const n of chosen){ try{ files.push(await buildNotePDF(n)); }catch(e){ console.warn("pdf failed",n.id,e); } }
+    for(const n of chosen){
+      try{ files.push(await buildNotePDF(n)); }catch(e){ console.warn("pdf failed",n.id,e); }
+      files.push(...videoFiles(n));
+    }
     if(!files.length){ toast("Échec de génération."); return; }
     if(navigator.canShare && navigator.canShare({files})){
       try{
