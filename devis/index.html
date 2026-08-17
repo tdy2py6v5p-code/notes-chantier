@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Devis">
 <meta name="description" content="Devis rapide Tech-Elec — main d'œuvre, déplacement, matériel, export PDF.">
-<meta name="app-version" content="2026.08.15.5">
+<meta name="app-version" content="2026.08.17.1">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="../icon-180.png">
 <link rel="icon" type="image/png" href="../icon-180.png">
@@ -298,7 +298,7 @@
     </div>
     <button class="mat-add-btn" id="mat-add" style="width:100%;margin-top:10px" aria-label="Ajouter la ligne">+ Ajouter la ligne</button>
     <a class="em-link" href="https://www.elektro-material.ch/" target="_blank" rel="noopener">↗ Ouvrir Elektro-Material pour chercher un prix</a>
-    <br><button class="em-link" id="seed-favoris" style="background:none;border:none;font:inherit;cursor:pointer;padding:0;margin-top:8px">+ Charger les désignations courantes (sans prix)</button>
+    <br><button class="em-link" id="seed-favoris" style="background:none;border:none;font:inherit;cursor:pointer;padding:0;margin-top:8px">+ Charger les désignations courantes (prix EM)</button>
     <div class="mat-list" id="mat-list"></div>
   </section>
 
@@ -444,24 +444,25 @@
     if(!e.target.closest(".mat-desig-field")) elSuggest.classList.remove("show");
   });
 
-  const SEED_ITEMS=[
-    "Prise T13 encastrée","Prise T13 saillie","Prise T23 triphasée encastrée",
-    "Interrupteur simple encastré","Interrupteur va-et-vient encastré","Bouton poussoir encastré",
-    "Variateur (dimmer) encastré","Détecteur de mouvement encastré",
-    "Disjoncteur automatique 1P+N 10A","Disjoncteur automatique 1P+N 16A","Disjoncteur automatique 1P+N 20A",
-    "Disjoncteur différentiel (FI) 30mA",
-    "Câble 3G1.5 mm² (T)","Câble 3G2.5 mm² (T)","Câble 5G2.5 mm² (T)",
-    "Tube annelé Ø16 (icta)","Tube annelé Ø20 (icta)",
-    "Boîte de dérivation encastrée","Boîte d'encastrement simple",
-    "Plaque de recouvrement 1 poste","Plaque de recouvrement 2 postes",
-    "Prise RJ45 encastrée","Prise TV/antenne encastrée",
-    "Spot LED encastré","Réglette LED étanche",
-    "Tableau électrique modulaire","Sonnette / bouton de sonnette",
-    "Coffret de chantier","Goulotte / chemin de câbles"
-  ];
+  /* Prix coûtant (PN, prix net EM compte Tech-Elec SA) relevés le 2026-08-17. Câbles et tubes: prix au mètre. null = pas de référence EM claire, à compléter manuellement. */
+  const SEED_ITEMS={
+    "Prise T13 encastrée":12.63,"Prise T13 saillie":14.35,"Prise T23 triphasée encastrée":15.59,
+    "Interrupteur simple encastré":18.49,"Interrupteur va-et-vient encastré":18.49,"Bouton poussoir encastré":null,
+    "Variateur (dimmer) encastré":114.82,"Détecteur de mouvement encastré":137.44,
+    "Disjoncteur automatique 1P+N 10A":24.82,"Disjoncteur automatique 1P+N 16A":19.04,"Disjoncteur automatique 1P+N 20A":53.55,
+    "Disjoncteur différentiel (FI) 30mA":62.10,
+    "Câble 3G1.5 mm² (T)":0.83,"Câble 3G2.5 mm² (T)":1.35,"Câble 5G2.5 mm² (T)":2.09,
+    "Tube annelé Ø16 (icta)":0.34,"Tube annelé Ø20 (icta)":0.36,
+    "Boîte de dérivation encastrée":3.43,"Boîte d'encastrement simple":1.72,
+    "Plaque de recouvrement 1 poste":7.66,"Plaque de recouvrement 2 postes":null,
+    "Prise RJ45 encastrée":27.46,"Prise TV/antenne encastrée":25.81,
+    "Spot LED encastré":23.83,"Réglette LED étanche":34.05,
+    "Tableau électrique modulaire":68.15,"Sonnette / bouton de sonnette":null,
+    "Coffret de chantier":null,"Goulotte / chemin de câbles":4.58
+  };
   $("#seed-favoris").addEventListener("click",()=>{
     let added=0;
-    for(const name of SEED_ITEMS){ if(!(name in favoris)){ favoris[name]=null; added++; } }
+    for(const name in SEED_ITEMS){ if(!(name in favoris)){ favoris[name]=SEED_ITEMS[name]; added++; } }
     saveFavoris(); refreshFavList();
     toast(added?`${added} désignation${added>1?"s":""} ajoutée${added>1?"s":""}`:"Déjà toutes chargées");
   });
